@@ -1,10 +1,9 @@
 from GameClasses import *
 import Global
-from queue import Queue
 import random
 
 
-circle = Circle(1, 2, 3 , 4, 5, 6, 7, 8)
+circle = Circle(8,7,6,5,4,3,2,1)
 
 
 def game_init():
@@ -64,6 +63,6 @@ def gaming():
         Global.output_dict['brick'] = Global.brick_changed
         Global.output_dict['item'] = Global.item_changed
 
-        
+
 
 

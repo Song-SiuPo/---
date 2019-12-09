@@ -13,6 +13,11 @@ ammo_num =0
 item_hp = 10
 item_ammo = 10
 
+current_x1 = 1
+current_y1 = 2
+current_x2 = 3
+current_y2 = 4
+
 
 brick_list=[]
 item_list=[]

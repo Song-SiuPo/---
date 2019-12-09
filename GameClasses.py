@@ -47,7 +47,7 @@ class Tank:
 
 
     def is_in_circle(self):
-        if (Global.circle.current_x1<self.x<Global.circle.current_x2)and(Global.circle.current_y1<self.y<Global.circle.current_y2):
+        if (Global.current_x1<self.x<Global.current_x2)and(Global.current_y1<self.y<Global.current_y2):
             return True
         else:
             return False
@@ -120,6 +120,10 @@ class Circle:
         self.current_y1 = current_y1
         self.current_x2 = current_x2
         self.current_y2 = current_y2
+        Global.current_x1 = current_x1
+        Global.current_y1 = current_y1
+        Global.current_x2 = current_x2
+        Global.current_y2 = current_y2
         self.target_x1 = target_x1
         self.target_y1 = target_y1
         self.target_x2 = target_x2
@@ -131,6 +135,10 @@ class Circle:
             self.current_y1 = self.current_y1 + int(self.current_y1 < self.target_y1)
             self.current_x2 = self.current_x2 + int(self.current_x2 < self.target_x2)
             self.current_y2 = self.current_y2 + int(self.current_y2 < self.target_y2)
+            Global.current_x1 =  self.current_x1
+            Global.current_y1 = self.current_y1
+            Global.current_x2 = self.current_x2
+            Global.current_y2 = self.current_y2
 
         if (self.current_x1 == self.target_x1)and(self.current_y1 == self.target_y1)and(self.current_x2 == self.target_x2)and(self.current_y2 ==self.target_y2):
             self.target_x1= self.target_x1 + random.randint(0, self.target_x2-self.target_x1)
