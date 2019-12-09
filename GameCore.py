@@ -29,6 +29,11 @@ def item_refresh():
             type_id = random.randint(0, 1)
             Global.item_changed.append(Item(x, y, type_id))
 
+def is_over():
+    if len(Global.tank_list) == 1:
+        return True
+    else:
+        return False
 
 
 def gaming():
@@ -53,4 +58,12 @@ def gaming():
 
         circle.refresh()
         item_refresh()
+
+        Global.output_dict['tank'] = Global.tank_list
+        Global.output_dict['ammo'] = Global.ammo_list
+        Global.output_dict['brick'] = Global.brick_changed
+        Global.output_dict['item'] = Global.item_changed
+
+        
+
 

@@ -13,17 +13,17 @@ ammo_num =0
 item_hp = 10
 item_ammo = 10
 
-ammo_list=[]
-tank_list=[]
+
 brick_list=[]
 item_list=[]
 
 operate_queue = Queue()
 operate_dict = {}
 
-output_dict={}
 
-
-
+ammo_list=[]
+tank_list=[]
 brick_changed = []
 item_changed = []
+
+output_dict={'tank':tank_list, 'ammo':ammo_list, 'brick':brick_changed, 'item':item_changed}
