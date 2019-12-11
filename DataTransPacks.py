@@ -71,7 +71,7 @@ def pack_server_data(pack_dict):
 
 #服务器解包
 def unpack_client_data(s):
-    dct = json.loads(s)
+    dct = json.loads(s.decode("utf-8"))
     return dct
 
 
@@ -123,7 +123,7 @@ def unpack_server_data(end_str):
 
 
 def pack_client_data(dict):
-    pack_str = json.dumps(dict)
+    pack_str = json.dumps(dict).encode("utf-8")
     return pack_str
 
 if __name__ == "__main__":
