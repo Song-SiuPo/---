@@ -104,7 +104,7 @@ def pack_server_data(pack_dict):
 # 返回一个dict
 def unpack_client_data(s):
     tup = struct.unpack("10siiiii",s)
-    unpack_dict = {'ID':tup[0], 'UP':tup[1], 'DOWN':tup[2], 'RIGHT':tup[3], 'LEFT':tup[4], 'FIRE':tup[5]}
+    unpack_dict = {'ID':tup[0].decode("utf-8"), 'UP':tup[1], 'DOWN':tup[2], 'RIGHT':tup[3], 'LEFT':tup[4], 'FIRE':tup[5]}
     return unpack_dict
 
 
