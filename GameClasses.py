@@ -32,15 +32,19 @@ class GlobalInfo:
     tank_list = []
     brick_changed = []
     item_changed = []
+    winner = -1
 
+
+    information = []
     tanks = []
     bulls = []
     obs = []
     glass = []
     props = []
+    safe = []
 
 
-    output_dict = {'tank': tank_list, 'ammo': ammo_list, 'brick': brick_changed, 'item': item_changed}
+    output_dict = {'information':information,'tanks': tanks, 'bulls':bulls, 'obs': obs, 'props': props , 'safe': safe}
 
 
 class Tank:
@@ -162,6 +166,7 @@ class Circle:
     def __init__(self,
                  current_x1, current_y1, current_x2, current_y2,
                  target_x1, target_y1, target_x2, target_y2,  info):
+        self.info = info
         self.current_x1 = current_x1
         self.current_y1 = current_y1
         self.current_x2 = current_x2
@@ -174,13 +179,13 @@ class Circle:
         self.target_y1 = target_y1
         self.target_x2 = target_x2
         self.target_y2 = target_y2
-        self.info = info
+
     def refresh(self):
         if self.info.time%10==0:
             self.current_x1 = self.current_x1 + int(self.current_x1 < self.target_x1)
             self.current_y1 = self.current_y1 + int(self.current_y1 < self.target_y1)
-            self.current_x2 = self.current_x2 + int(self.current_x2 < self.target_x2)
-            self.current_y2 = self.current_y2 + int(self.current_y2 < self.target_y2)
+            self.current_x2 = self.current_x2 - int(self.current_x2 > self.target_x2)
+            self.current_y2 = self.current_y2 - int(self.current_y2 > self.target_y2)
             self.info.current_x1 =  self.current_x1
             self.info.current_y1 = self.current_y1
             self.info.current_x2 = self.current_x2
