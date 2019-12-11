@@ -4,6 +4,7 @@
 """
 from game_server import Game_server
 from threading import Thread
+import copy
 
 class Moniter():
     def __init__(self):
@@ -21,9 +22,20 @@ class Moniter():
                             "server_queue":self.server_queue,
                             "game_threads":self.game_threads,
                             "server_state":self.server_state,
+                            "players_queue":self.players_queue,
                         },
                         }
         self.stop = False
+
+    def players_queue(self):
+        print("等待队列中的玩家：")
+        plays = copy.copy(self.server.get_players_in_queue())
+        cnt = 0
+        while not plays.empty():
+            cnt += 1
+            cur_player = plays.get()
+            print(cur_player)
+        print("共有",cnt,"位玩家在等待")
 
     # 结束某局游戏
     def kill_game(self, game_id):
@@ -57,6 +69,7 @@ class Moniter():
                 print("游戏id:",k)
 
     def run_server(self, addr=("10.128.181.188", 23456)):
+        print(addr)
         host, port = addr
         port = int(port)
         self.server = Game_server()
@@ -88,6 +101,9 @@ class Moniter():
     def moniter_run(self):
         while not self.stop:
             self.get_cmd()
+        print("正在停止")
+        self.server.stop()
+
 
     def kill_self(self):
         self.stop = True
