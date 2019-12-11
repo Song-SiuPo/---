@@ -26,6 +26,7 @@ server_dict = {'info':[0,0,2,1,2,1],
 '''
 
 import struct
+import json
 
 # 打包服务器传向客户端的数据
 #将一个dict转为一个包传递
@@ -69,12 +70,9 @@ def pack_server_data(pack_dict):
 
 
 #服务器解包
-#传过来的是打包的6个int，
-# 返回一个dict
 def unpack_client_data(s):
-    tup = struct.unpack("iiiiii",s)
-    unpack_dict = {'ID':tup[0], 'UP':tup[1], 'DOWN':tup[2], 'RIGHT':tup[3], 'LEFT':tup[4], 'FIRE':tup[5]}
-    return unpack_dict
+    dct = json.loads(s)
+    return dct
 
 
 #客户端操作-解压服务器传输的包
@@ -124,26 +122,21 @@ def unpack_server_data(end_str):
 
 
 
-#客户端操作-打包客户端数据
-#dict={ID:[int],UP:[int],DOWN:[int],RIGHT:[int],LEFT:[int],FIRE:[int]}
-'''
-输入dict={ID:1,UP:0,DOWN:1,RIGHT:0,LEFT:0，FIRE:1}
-输出XXXXXXXXXXX（‘101001’）
-'''
 def pack_client_data(dict):
-    pack_str = struct.pack("iiiiii",dict['ID'],dict['UP'],dict['DOWN'],dict['RIGHT'],dict['LEFT'],dict['FIRE'])
+    pack_str = json.dumps(dict)
     return pack_str
 
+if __name__ == "__main__":
 #测试样例
-server_dict = {'info':[0,0,2,1,2,1],
+    server_dict = {'info':[0,0,2,1,2,1],
     'tanks':[[1,50,30,0,18,5.32,4.52],[2,80,40,1,108,9.32,12.52]],
     'bulls':[[1,22,0,7.7,5.5]],
     'obs':[[2,3], [8,8]],
     'props':[[1,1,1,7,9],[2,1,1,5,6]],
     'safe':[2,2,12,12,3,3,9,9]}
-s = pack_server_data(server_dict)
-print("打包")
-end_dict = unpack_server_data(s)
-print(end_dict)
+    s = pack_server_data(server_dict)
+    print("打包")
+    end_dict = unpack_server_data(s)
+    print(end_dict)
 
 
