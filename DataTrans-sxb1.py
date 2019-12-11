@@ -103,7 +103,7 @@ def pack_server_data(pack_dict):
 #传过来的是打包的6个int，
 # 返回一个dict
 def unpack_client_data(s):
-    tup = struct.unpack("iiiiii",s)
+    tup = struct.unpack("10siiiii",s)
     unpack_dict = {'ID':tup[0], 'UP':tup[1], 'DOWN':tup[2], 'RIGHT':tup[3], 'LEFT':tup[4], 'FIRE':tup[5]}
     return unpack_dict
 
@@ -177,13 +177,13 @@ def unpack_server_data(end_str):
 
 
 #客户端操作-打包客户端数据
-#dict={ID:[int],UP:[int],DOWN:[int],RIGHT:[int],LEFT:[int],FIRE:[int]}
+#dict={ID:[string(10)],UP:[int],DOWN:[int],RIGHT:[int],LEFT:[int],FIRE:[int]}
 '''
-输入dict={ID:1,UP:0,DOWN:1,RIGHT:0,LEFT:0，FIRE:1}
+输入dict={ID:"1234567890",UP:0,DOWN:1,RIGHT:0,LEFT:0，FIRE:1}
 输出XXXXXXXXXXX（‘101001’）
 '''
 def pack_client_data(dict):
-    pack_str = struct.pack("iiiiii",dict['ID'],dict['UP'],dict['DOWN'],dict['RIGHT'],dict['LEFT'],dict['FIRE'])
+    pack_str = struct.pack("10siiiii",dict['ID'].encode("utf-8"),dict['UP'],dict['DOWN'],dict['RIGHT'],dict['LEFT'],dict['FIRE'])
     return pack_str
 
 #测试样例
