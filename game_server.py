@@ -9,9 +9,14 @@ import time
 from queue import Queue
 import GameCore
 from pack_data import *
+from stop_thread import stop_thread
 
 class Game_server():
     def __init__(self):
+        # 服务器是否运行
+        self.stop_send = False
+        self.stop_receive = False
+        self.stop_handle = False
         # 服务器socket
         self.server_socket = None
 
@@ -82,6 +87,7 @@ class Game_server():
         self.begin_send()
         self.begin_handle()
         # 服务器功能扩展
+        print("服务器已启动")
 
     # 派生线程接收数据
     def begin_receive(self):
@@ -108,7 +114,7 @@ class Game_server():
 
     # 处理消息队列中的消息
     def handle_message(self):
-        while True:
+        while not self.stop_handle:
             # 如果待处理队列为空则休息
             if self.message_queue.empty():
                 time.sleep(0.01)
@@ -127,7 +133,7 @@ class Game_server():
             print("数据报错误")
             print(e)
         # 开始游戏的任务
-        if "begin_game" in data.keys() and data["begin_game"]== 1:
+        if "begin_game" in data.keys() and data["begin_game"] == 1:
             try :
                 self.players_ip[player_id] = client_addr
                 self.player_queue.put(player_id)
@@ -183,50 +189,65 @@ class Game_server():
         while not stop:
             while not self.game_message[cur_id].empty():
                 cur_game.input_data(self.game_message[cur_id].get())
-            cur_data = cur_game.gaming()
+            cur_game.gaming()
+            cur_data = cur_game.output_data()
             # 处理要发送的数据的数据，即添加玩家的地址信息，然后加入发送队列
-            # TODO: 打包？
-            pack_server_data(cur_data)
+            winner = cur_data["information"][0]
+            data_pack = pack_server_data(cur_data)
             for pid in players_come_in:
-                self.message_queue.put((cur_data,self.players_ip[pid]))
-            # TODO:判断游戏结束，使用cur_data参数？
+                self.message_queue.put((data_pack, self.players_ip[pid]))
+            if winner == -1:
+                stop = True
             # 控制处理速度
             time.sleep(0.015)
 
 
     # 发送待发送消息队列的数据
     def send_data(self):
-        while True:
+        if self.server_socket is None:
+            return
+
+        while not self.stop_send:
             # 如果发送队列为空，则休息0.02秒
             if self.message_to_send.empty():
                 time.sleep(0.02)
             else:
                 data,addr = self.message_to_send.get()
-                self.server_socket.sendto(data,addr)
+                self.server_socket.sendto(data, addr)
 
     # 接收数据,将数据放入消息队列
     def receive_data(self):
         if self.server_socket is None:
             return
 
-        while True:
+        while not self.stop_receive:
             data, client_addr = self.server_socket.recvfrom(2048)
             self.message_queue.put((data,client_addr))
 
     # 停止服务器运行
     def stop(self):
-        self.receive_thread.join()
-        for t in self.games_threads:
-            t.join()
-        # 发送完所有消息后停止服务器
-        while self.message_to_send.qsize()!=0:
-            time.sleep(1)
-        self.send_thread.join()
-        self.handle_thread.join()
+        if self.server_socket != None:
+            self.stop_receive = self.stop_send = self.stop_handle = True
+            stop_thread(self.receive_thread)
+            print("接收线程停止")
+            for t in self.games_threads:
+                t.join()
+            # 发送完所有消息后停止服务器
+            while self.message_to_send.qsize()!=0:
+                print("等待消息队列清空")
+                time.sleep(1)
+            self.send_thread.join()
+            print("发送线程停止")
+            self.handle_thread.join()
+            print("处理线程停止")
+            self.server_socket.close()
+        else:
+            print("服务器没有启动")
 
 
 if __name__ == "__main__":
     my_server = Game_server()
     my_server.run("localhost",23456)
+    my_server.stop()
 
 
