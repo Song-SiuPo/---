@@ -126,6 +126,7 @@ class Game_server():
     # 分配消息给具体的任务
     def process_data(self, data, client_addr):
         unpack_data = unpack_client_data(data)
+        print(isinstance(unpack_data, dict))
         player_id = ""
         try:
             player_id = unpack_data["id"]
@@ -133,12 +134,14 @@ class Game_server():
             print("数据报错误")
             print(e)
         # 开始游戏的任务
-        if "begin_game" in data.keys() and data["begin_game"] == 1:
+        if "begin_game" in unpack_data.keys() and unpack_data["begin_game"] == 1:
             try :
+                # 注册玩家ip地址和id
                 self.players_ip[player_id] = client_addr
                 self.player_queue.put(player_id)
+
                 # 如果人数足够，就开始游戏
-                if self.player_queue.qsize() >=4:
+                if self.player_queue.qsize() >= 4:
                     players = []
                     while not self.player_queue.empty() or len(players)<self.max_num:
                         players.append(self.player_queue.get())
@@ -171,6 +174,7 @@ class Game_server():
         :param data: 传入的初始化信息  ------#TODO：地图设计
         :param cur_id: 本局游戏的id
         """
+        print("开始游戏", cur_id)
         self.game_message[cur_id] = Queue()
         # 最终加入游戏的玩家
         players_come_in = []
@@ -238,7 +242,6 @@ class Game_server():
                 time.sleep(1)
             self.send_thread.join()
             print("发送线程停止")
-            self.handle_thread.join()
             print("处理线程停止")
             self.server_socket.close()
         else:
