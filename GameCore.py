@@ -42,27 +42,26 @@ class GameCore:
             self.info.winner = alive_id
 
     def refresh_output(self):
-        self.info.information = [0, self.info.winner, len(self.info.tank_list), len(self.info.ammo_list), len(self.info.brick_changed),
-             len(self.info.item_changed)]
 
-        self.info.tanks = []
+        self.info.information.clear()
+        self.info.information.append(
+            [0, self.info.winner, len(self.info.tank_list), len(self.info.ammo_list), len(self.info.brick_changed),
+             len(self.info.item_changed)])
+        self.info.tanks.clear()
         for tank in self.info.tank_list:
             self.info.tanks.append([tank.tank_id, tank.hp, tank.ammo, tank.kill, tank.direction, tank.x, tank.y])
-
-        self.info.bulls = []
+        self.info.bulls.clear()
         for ammo in self.info.ammo_list:
             self.info.bulls.append([ammo.tank_id, ammo.ammo_id, ammo.exist, ammo.x, ammo.y])
-
-        self.info.obs = []
+        self.info.obs.clear()
         for brick in self.info.brick_changed:
             self.info.obs.append([brick.x, brick.y])
-
-        self.info.props = []
+        self.info.props.clear()
         for item in self.info.item_changed:
             self.info.props.append([1, item.type_id, item.exist, item.x, item.y])
-
-        self.info.safe = [self.circle.current_x1, self.circle.current_y1,self.circle.current_x2,self.circle.current_y2,
-             self.circle.target_x1, self.circle.target_y1,self.circle.target_x2,self.circle.target_y2]
+        self.info.safe.clear()
+        self.info.safe.append([self.circle.current_x1, self.circle.current_y1,self.circle.current_x2,self.circle.current_y2,
+             self.circle.target_x1, self.circle.target_y1,self.circle.target_x2,self.circle.target_y2])
 
     def gaming(self):
         # operation_num = operate_queue.qsize()
