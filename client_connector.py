@@ -3,7 +3,7 @@
 '''
 
 
-from multiprocessing import Process, Queue
+from multiprocessing import Queue
 from threading import Thread
 from time import sleep
 import socket
@@ -17,45 +17,41 @@ class Connector:
     def __init__(self):
         # self.tcpsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # self.tcpsocket.connect((__class__._serverIP, __class__._serverPort))
-        # self.udpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.inqueue = Queue()
         self.outqueue = Queue()
-        self.endqueue = Queue(4)
-        self.process = Process(target=self._thread_main, args=(self.inqueue, self.outqueue, self.endqueue))
+        self.end_flag = False
+        self.udpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udpsendth = Thread(target=self._thread_udpsend)
+        self.udplistenth = Thread(target=self._thread_udplisten)
 
     def start(self):
-        self.process.start()
+        self.udpsendth.start()
+        self.udplistenth.start()
 
     def end(self):
-        self.endqueue.put(True)
+        self.end_flag = True
+        self.udpsocket.close()
 
-    def _thread_main(self, inq:Queue, outq:Queue, endq:Queue):
-        def listen(sock:socket.socket, outqueue, endq):
-            while endq.empty():
-                data = None
-                try:
-                    data, addr = sock.recvfrom(1024)
-                except OSError as e:
-                    pass
-                if data:
-                    outqueue.put(data)
-                sleep(0.01)
-
-        udpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        end_flag = []   # 当列表不空，则发消息
-        listen_th = Thread(target=listen, args=(udpsocket, outq, endq))
-        listen_th.start()
-
-        while True:
+    def _thread_udpsend(self):
+        while not self.end_flag:
             # 准备向服务器传消息
-            if not inq.empty():
-                data = inq.get()
-                udpsocket.sendto(data, (__class__._serverIP, __class__._serverPort))
-            if not endq.empty():
-                break
+            if not self.inqueue.empty():
+                data = self.inqueue.get()
+                self.udpsocket.sendto(data, (__class__._serverIP, __class__._serverPort))
             sleep(0.01)
 
-        udpsocket.close()
+    def _thread_udplisten(self):
+        while not self.end_flag:
+            data = None
+            try:
+                data, addr = self.udpsocket.recvfrom(1024)
+            except OSError as e:
+                if e.errno == 10022 or e.errno == 10038:
+                    break
+                raise e
+            if data:
+                self.outqueue.put(data)
+            sleep(0.01)
 
     '''
     def send_data_tcp(self, diction):
