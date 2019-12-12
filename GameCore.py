@@ -63,30 +63,49 @@ class GameCore:
         self.info.safe.append([self.circle.current_x1, self.circle.current_y1,self.circle.current_x2,self.circle.current_y2,
              self.circle.target_x1, self.circle.target_y1,self.circle.target_x2,self.circle.target_y2])
 
+    def list_refresh(self):
+        for tank in self.info.tank_list:
+            if tank.hp <= 0:
+                self.info.tank_list.remove(tank)
+        for ammo in self.info.ammo_list:
+            if ammo.exist == 0:
+                self.info.ammo_list.remove(ammo)
+        for brick in self.info.brick_list:
+            if brick.exist == 0:
+                self.info.brick_list.remove(brick)
+
+        for item in self.info.item_list:
+            if item.exist == 0:
+                self.info.item_list.remove(item)
+
     def gaming(self):
         # operation_num = operate_queue.qsize()
+        try:
+            self.list_refresh()
+            while not self.info.operate_queue.empty():
+                operate = self.info.operate_queue.get()
 
-        while not self.info.operate_queue.empty():
-            operate = self.info.operate_queue.get()
+                tank_id = operate[0]
+                up = operate[1]
+                down = operate[2]
+                left = operate[3]
+                right = operate[4]
+                fire = operate[5]
+                tank = self.info.tank_list[tank_id]
+                tank.shoot(fire)
+                tank.drive(up, down, left, right)
 
-            tank_id = operate[0]
-            up = operate[1]
-            down = operate[2]
-            left = operate[3]
-            right = operate[4]
-            fire = operate[5]
-            tank = self.info.tank_list[tank_id]
-            tank.shoot(fire)
-            tank.drive(up, down, left, right)
+                for ammo in self.info.ammo_list:
+                    ammo.move()
+                    ammo.refresh()
 
-            for ammo in self.info.ammo_list:
-                ammo.move()
-                ammo.refresh()
+                self.circle.refresh()
+                self.item_refresh()
+                self.check_winner()
+                self.refresh_output()
 
-            self.circle.refresh()
-            self.item_refresh()
-            self.check_winner()
-            self.refresh_output()
+        except Exception as e:
+            print('GameCore Error',e)
 
 
 
