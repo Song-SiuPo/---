@@ -195,4 +195,4 @@ class Circle:
             self.target_x1= self.target_x1 + random.randint(0, self.target_x2-self.target_x1)
             self.target_y1 = self.target_y1 + random.randint(0, self.target_y2-self.target_y1)
             self.target_x2 = self.target_x2 - random.randint(0, self.target_x2-self.target_x1)
-            self.target_y2 = self.target_y2 - random.randint(0, self.target_x2-self.target_x1)
+            self.target_y2 = self.target_y2 - random.randint(0, self.target_y2-self.target_y1)
