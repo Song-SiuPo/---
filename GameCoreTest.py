@@ -189,15 +189,17 @@ while winner==-1:
     for tank in game.info.tank_list:
 
         #game.input_data([tank.tank_id, random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1)])
-        game.input_data([tank.tank_id, 0, 0, 0, 0,1])
+        game.input_data({'id': tank.tank_id, 'Up':0, 'Down':0, 'Left':0, 'Right':0, 'fire':1})
         #print(game.info.ammo_list[0].x, game.info.ammo_list[0].y)
         #print(tank.tank_id, tank.hp, tank.ammo, tank.x, tank.y)
     winner = game.gaming()
     #print(game.info.ammo_list[0].x, game.info.ammo_list[0].y)
     out_data = game.output_data()
+    print(out_data)
     count += 1
     if count%100 == 0:
-        print(count, time.time()-s)
+        pass
+        #print(count, time.time()-s)
 print(winner)
 for tank in game.info.tank_list:
     print(tank.tank_id, tank.hp, tank.ammo, tank.x, tank.y)

@@ -47,7 +47,7 @@ class GlobalInfo:  #游戏的全局参数和全局变量
     safe = []
 
 
-    output_dict = {'information':information,'tanks': tanks, 'bulls':bulls, 'obs': obs, 'props': props , 'safe': safe}
+    output_dict = {'info':information,'tanks': tanks, 'bulls':bulls, 'obs': obs, 'props': props , 'safe': safe}
 
 
 class Tank:

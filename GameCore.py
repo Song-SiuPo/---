@@ -61,9 +61,17 @@ class GameCore:
     def refresh_output(self):
 
         self.info.information.clear()
+        '''
         self.info.information.append(
             [0, self.info.winner, len(self.info.tank_list), len(self.info.ammo_list), len(self.info.brick_changed),
              len(self.info.item_changed)])
+        '''
+        self.info.information.append(0)
+        self.info.information.append(self.info.winner)
+        self.info.information.append(len(self.info.tank_list))
+        self.info.information.append(len(self.info.ammo_list))
+        self.info.information.append(len(self.info.brick_changed))
+        self.info.information.append(len(self.info.item_changed))
         self.info.tanks.clear()
         for tank in self.info.tank_list:
             self.info.tanks.append([tank.tank_id, tank.hp, tank.ammo, tank.kill, tank.direction, tank.x, tank.y])
@@ -77,8 +85,18 @@ class GameCore:
         for item in self.info.item_changed:
             self.info.props.append([1, item.type_id, item.exist, item.x, item.y])
         self.info.safe.clear()
+        '''
         self.info.safe.append([self.circle.current_x1, self.circle.current_y1,self.circle.current_x2,self.circle.current_y2,
              self.circle.target_x1, self.circle.target_y1,self.circle.target_x2,self.circle.target_y2])
+        '''
+        self.info.safe.append(self.circle.current_x1)
+        self.info.safe.append(self.circle.current_y1)
+        self.info.safe.append(self.circle.current_x2)
+        self.info.safe.append(self.circle.current_y2)
+        self.info.safe.append(self.circle.target_x1)
+        self.info.safe.append(self.circle.target_y1)
+        self.info.safe.append(self.circle.target_x2)
+        self.info.safe.append(self.circle.target_y2)
 
     def list_refresh(self):
         for tank in self.info.tank_list:
@@ -142,12 +160,12 @@ class GameCore:
 
             operate = self.info.operate_queue.get()
 
-            tank_id = operate[0]
-            up = operate[1]
-            down = operate[2]
-            left = operate[3]
-            right = operate[4]
-            fire = operate[5]
+            tank_id = operate['id']
+            up = operate['Up']
+            down = operate['Down']
+            left = operate['Left']
+            right = operate['Right']
+            fire = operate['fire']
             for t in self.info.tank_list:
                 if t.tank_id == tank_id:
                     tank = t
