@@ -8,9 +8,24 @@ class GameCore:
         self.info = GlobalInfo()
         self.circle = Circle(1,1,99,99,1,1,99,99, self.info)
 
-    def game_init(self, server_dict):
-        for tank in server_dict['tanks']:
-            self.info.tank_list.append(Tank(tank[0],tank[1],tank[2],tank[3],tank[4],tank[5], tank[6],self.info))
+    def game_init(self, server_dict, players_id): #初始化坦克和障碍物
+        num = 0
+        for player_id in players_id: #根据玩家列表生成坦克列表
+            x = -1
+            y = -1
+            near_brick = True
+            while near_brick:
+                x = random.randint(2, 98)
+                y = random.randint(2, 98)
+                near_brick = False
+                for brick in server_dict['obs']:
+                    if abs(x - brick[0]) < 2 or abs(y - brick[1]) < 2:
+                        near_brick = True
+                        break
+            if x==-1 or y == -1:
+                return 'too many bricks to set the location of tank'
+            self.info.tank_list.append(Tank(player_id, self.info.tank_life, self.info.tank_ammo, 0, 0, x, y, self.info)) #坦克位置随机生成在离障碍物2个单位以外的区域
+            num = num+1
         for brick in server_dict['obs']:
             self.info.brick_list.append(Brick(brick[0], brick[1]))
 

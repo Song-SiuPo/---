@@ -3,7 +3,7 @@ from queue import Queue
 
 import random
 
-class GlobalInfo:
+class GlobalInfo:  #游戏的全局参数和全局变量
     time = 0
     length = 1
     poison = 0.1
@@ -11,8 +11,11 @@ class GlobalInfo:
     # tank_size = 1
     ammo_v = 10
     ammo_attack = 10
+    tank_life = 100
+    tank_ammo = 50
     # circle_v = 1
     ammo_num = 0
+
 
     item_hp = 10
     item_ammo = 10
@@ -60,7 +63,7 @@ class Tank:
         self.info = info
 
     def shoot(self, fire):
-        if fire==1:
+        if fire==1 and self.ammo >= 1:
             self.ammo = self.ammo - 1
             self.info.ammo_num = self.info.ammo_num + 1
             self.info.ammo_list.append(Ammo(self.tank_id, self.info.ammo_num, self.x, self.y, self.direction, self.info))

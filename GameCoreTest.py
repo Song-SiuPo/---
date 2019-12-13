@@ -1,7 +1,7 @@
 from GameCore import *
 server_dict = {'info':[1,0,5,0,1189,0,375],   #扩展、winner、坦克数、子弹数、障碍物数、道具数、草丛数
 
-    'tanks':[[123,100,50,0,0,50.0,80.0],[143,100,50,0,0,50.0,70.0],[223,100,50,0,0,50.0,60.0],[233,100,50,0,0,50.0,50.0],[404,100,50,0,0,50.0,40.0]],
+    'tanks':[[0,100,50,0,0,50.0,80.0],[1,100,50,0,0,50.0,70.0],[2,100,50,0,0,50.0,60.0],[3,100,50,0,0,50.0,50.0],[4,100,50,0,0,50.0,40.0], [5,100,50,0,0,50.0,30.0]],
 
     'bulls':[],
 
@@ -174,17 +174,18 @@ server_dict = {'info':[1,0,5,0,1189,0,375],   #扩展、winner、坦克数、子
              [85,23],[85,24],[85,25],[89,41]]
             }
 
+players_id = [30, 60, 120, 144, 240, 888]
 game = GameCore(0)
-game.game_init(server_dict)
-
+init = game.game_init(server_dict, players_id)
+print(init)
 
 winner = -1
 
 while winner==-1:
     for tank in game.info.tank_list:
-        #game.input_data([tank.tank_id, random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1)])
-        game.input_data([tank.tank_id, 0, 0, 0, 0,1])
-        print(tank.tank_id, tank.hp, tank.ammo)
+        game.input_data([tank.tank_id, random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1)])
+        #game.input_data([tank.tank_id, 0, 0, 0, 0,1])
+        print(tank.tank_id, tank.hp, tank.ammo, tank.x, tank.y)
     winner = game.gaming()
     out_data = game.output_data()
 
