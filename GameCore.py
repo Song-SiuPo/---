@@ -22,8 +22,8 @@ class GameCore:
                     if abs(x - brick[0]) < 2 or abs(y - brick[1]) < 2:
                         near_brick = True
                         break
-            if x==-1 or y == -1:
-                return 'too many bricks to set the location of tank'
+            if x==-1 or y == -1: #无视
+                return 'too many bricks to set the location of tank' #无视
             self.info.tank_list.append(Tank(player_id, self.info.tank_life, self.info.tank_ammo, 0, 0, x, y, self.info)) #坦克位置随机生成在离障碍物2个单位以外的区域
             num = num+1
         for brick in server_dict['obs']:

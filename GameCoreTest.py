@@ -1,4 +1,5 @@
 from GameCore import *
+import time
 server_dict = {'info':[1,0,5,0,1189,0,375],   #扩展、winner、坦克数、子弹数、障碍物数、道具数、草丛数
 
     'tanks':[[0,100,50,0,0,50.0,80.0],[1,100,50,0,0,50.0,70.0],[2,100,50,0,0,50.0,60.0],[3,100,50,0,0,50.0,50.0],[4,100,50,0,0,50.0,40.0], [5,100,50,0,0,50.0,30.0]],
@@ -180,15 +181,20 @@ init = game.game_init(server_dict, players_id)
 print(init)
 
 winner = -1
-
+count = 0
+s = time.time()
 while winner==-1:
     for tank in game.info.tank_list:
         game.input_data([tank.tank_id, random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1)])
         #game.input_data([tank.tank_id, 0, 0, 0, 0,1])
-        print(tank.tank_id, tank.hp, tank.ammo, tank.x, tank.y)
+        #game.input_data([tank.tank_id, 0, 0, 0, 0, 1])
+        #game.input_data([tank.tank_id, 0, 0, 0, 0, 1])
+        #game.input_data([tank.tank_id, 0, 0, 0, 0, 1])
+        #print(tank.tank_id, tank.hp, tank.ammo, tank.x, tank.y)
     winner = game.gaming()
     out_data = game.output_data()
-
+    count += 1
+    print(count, time.time()-s)
 print(winner)
 
 
