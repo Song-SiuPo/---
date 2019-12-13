@@ -6,11 +6,14 @@ class GameCore:
     def __init__(self, num):
         self.num = num
         self.info = GlobalInfo()
-        self.circle = Circle(5, 0, 20, 15, 10, 5, 15, 10, self.info)
+        self.circle = Circle(1,1,99,99,1,1,99,99, self.info)
 
-    def game_init(self):
-        for i in range(5):
-            self.info.tank_list.append(Tank(i, 100, 100, 0, 20.0+i*10, 20.0+i*10, 0, self.info))
+    def game_init(self, server_dict):
+        for tank in server_dict['tanks']:
+            self.info.tank_list.append(Tank(tank[0],tank[1],tank[2],tank[3],tank[4],tank[5], tank[6],self.info))
+        for brick in server_dict['obs']:
+            self.info.brick_list.append(Brick(brick[0], brick[1]))
+
 
     def input_data(self,data):
         self.info.operate_queue.put(data)
@@ -19,7 +22,7 @@ class GameCore:
         return self.info.output_dict
 
     def item_refresh(self):
-        if self.info.time % 60 == 0:
+        if self.info.time % 60*30 == 0:
             for i in range(len(self.info.tank_list)):
                 x = random.randint(self.circle.current_x1, self.circle.current_x2)
                 y = random.randint(self.circle.current_y1, self.circle.current_y2)
@@ -67,19 +70,51 @@ class GameCore:
         for tank in self.info.tank_list:
             if tank.hp <= 0:
                 self.info.tank_list.remove(tank)
+
         for ammo in self.info.ammo_list:
             if ammo.exist == 0:
                 self.info.ammo_list.remove(ammo)
         for brick in self.info.brick_list:
             if brick.exist == 0:
+                #print(self.info.brick_list)
                 self.info.brick_list.remove(brick)
-
+                #print(self.info.brick_list)
         for item in self.info.item_list:
             if item.exist == 0:
                 self.info.item_list.remove(item)
 
     def gaming(self):
         # operation_num = operate_queue.qsize()
+        try:
+            self.list_refresh()
+            while not self.info.operate_queue.empty():
+                operate = self.info.operate_queue.get()
+
+                tank_id = operate[0]
+                up = operate[1]
+                down = operate[2]
+                left = operate[3]
+                right = operate[4]
+                fire = operate[5]
+                for t in self.info.tank_list:
+                    if t.tank_id == tank_id:
+                        tank = t
+                        break
+                tank.shoot(fire)
+                tank.drive(up, down, left, right)
+
+                for ammo in self.info.ammo_list:
+                    ammo.move()
+                    ammo.refresh()
+
+                self.circle.refresh()
+                self.item_refresh()
+                self.check_winner()
+                self.refresh_output()
+                self.info.time = self.info.time + 1
+        except Exception as e:
+            print('GameCore Error', e)
+        '''
         try:
             self.list_refresh()
             while not self.info.operate_queue.empty():
@@ -103,10 +138,10 @@ class GameCore:
                 self.item_refresh()
                 self.check_winner()
                 self.refresh_output()
-
+                self.info.time = self.info.time+1
         except Exception as e:
             print('GameCore Error',e)
-
+        '''
 
 
 

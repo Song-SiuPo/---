@@ -181,7 +181,7 @@ class Circle:
         self.target_y2 = target_y2
 
     def refresh(self):
-        if self.info.time%10==0:
+        if self.info.time%10*30==0:
             self.current_x1 = self.current_x1 + int(self.current_x1 < self.target_x1)
             self.current_y1 = self.current_y1 + int(self.current_y1 < self.target_y1)
             self.current_x2 = self.current_x2 - int(self.current_x2 > self.target_x2)
