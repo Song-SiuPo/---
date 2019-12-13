@@ -184,18 +184,25 @@ winner = -1
 count = 0
 s = time.time()
 while winner==-1:
+    #print(game.circle.current_x1, game.circle.current_y1, game.circle.current_x2, game.circle.current_y2,
+          #game.circle.target_x1, game.circle.target_y1, game.circle.target_x2, game.circle.target_y2)
     for tank in game.info.tank_list:
-        game.input_data([tank.tank_id, random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1)])
-        #game.input_data([tank.tank_id, 0, 0, 0, 0,1])
-        #game.input_data([tank.tank_id, 0, 0, 0, 0, 1])
-        #game.input_data([tank.tank_id, 0, 0, 0, 0, 1])
-        #game.input_data([tank.tank_id, 0, 0, 0, 0, 1])
+
+        #game.input_data([tank.tank_id, random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1)])
+        game.input_data([tank.tank_id, 0, 0, 0, 0,1])
+        #print(game.info.ammo_list[0].x, game.info.ammo_list[0].y)
         #print(tank.tank_id, tank.hp, tank.ammo, tank.x, tank.y)
     winner = game.gaming()
+    #print(game.info.ammo_list[0].x, game.info.ammo_list[0].y)
     out_data = game.output_data()
     count += 1
-    print(count, time.time()-s)
+    if count%100 == 0:
+        print(count, time.time()-s)
 print(winner)
+for tank in game.info.tank_list:
+    print(tank.tank_id, tank.hp, tank.ammo, tank.x, tank.y)
+    print(game.circle.current_x1, game.circle.current_y1,game.circle.current_x2, game.circle.current_y2, game.circle.target_x1, game.circle.target_y1, game.circle.target_x2, game.circle.target_y2)
+
 
 
 

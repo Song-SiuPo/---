@@ -89,6 +89,7 @@ class GameCore:
             if ammo.exist == 0:
                 self.info.ammo_list.remove(ammo)
 
+
         for brick in self.info.brick_list:
             if brick.exist == 0:
                 self.info.brick_list.remove(brick)

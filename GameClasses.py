@@ -118,7 +118,7 @@ class Ammo:
         self.y = self.y - math.cos(self.direction) * self.info.ammo_v
 
     def refresh(self):
-        if self.x >= 100 or self.x <= 0 or self.y >= 100 or self.x <= 0:
+        if self.x >= 100 or self.x <= 0 or self.y >= 100 or self.y <= 0:
             self.exist = 0
             return
         for tank in self.info.tank_list:
