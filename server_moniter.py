@@ -5,29 +5,33 @@
 from game_server import Game_server
 from threading import Thread
 import copy
+from tcp_server import TCP_server
 
 
 class Monitor:
     def __init__(self):
         self.server = None
+        self.tcp_server = None
         # 指令字典
         self.command = {"begin": {    # 开始某项进程
-                            "server":self.run_server,
+                            "server": self.run_server,
+                            "tcp_server": self.run_tcp,
+                            "all":self.run
                         },
                         "kill": {    # 停止某项进程
-                            "server":self.kill,
-                            "self":self.kill_self,
-                            "game":self.kill_game,
+                            "server": self.kill,
+                            "self": self.kill_self,
+                            "game": self.kill_game,
                         },
                         "peek": {    # 查看某个属性
-                            "server_queue":self.server_queue,
-                            "game_threads":self.game_threads,
-                            "server_state":self.server_state,
-                            "players_queue":self.players_queue,
+                            "server_queue": self.server_queue,
+                            "game_threads": self.game_threads,
+                            "server_state": self.server_state,
+                            "players_queue": self.players_queue,
                         },
                         "monitor": {
-                            "receive": self.monitor_receive,
-                            "send": self.monitor_send
+                            "receive":  self.monitor_receive,
+                            "send":  self.monitor_send
                         },
                         "stop": {
                             "receive": self.stop_receive,
@@ -38,12 +42,14 @@ class Monitor:
 
     if "monitor":
         def monitor_receive(self, time = None):
+            print("开始监听接收数据")
             self.server.begin_rec_info()
             if time:
                 time.sleep(time)
                 self.stop_receive()
 
         def monitor_send(self, time = None):
+            print("开始监听发送的数据")
             self.server.begin_send_info()
             if time:
                 time.sleep(time)
@@ -88,27 +94,37 @@ class Monitor:
                 print("没有正在运行的游戏")
             else:
                 for k,v in threads.items():
-                    print("游戏id:",k)
+                    print("游戏id:", k)
 
     if "begin":
         def run_server(self, addr=("10.128.181.188", 23456)):
-            print(addr)
             host, port = addr
             port = int(port)
             self.server = Game_server()
             self.server.run(host, port)
-            print("服务器在-",host,"-端口-",port,"上开始")
+            print("游戏服务器在-", host, "-端口-", port, "上开始")
+
+        def run_tcp(self, addr=("10.128.181.188", 5000)):
+            host, port = addr
+            self.tcp_server = TCP_server()
+            self.tcp_server.run(addr)
+            print("tcp服务器在-", host, "-端口-", port, "上开始")
+
+        def run(self):
+            self.run_server()
+            self.run_tcp()
 
     if "kill":
         def kill(self):
             self.server.stop()
+            self.tcp_server.stop_fun()
             print("服务器结束")
 
         # 结束某局游戏
         def kill_game(self, game_id):
             if game_id in self.server.get_games_thread().keys():
                 self.server.get_games_thread()[game_id].join()
-                print("游戏",game_id,"已结束")
+                print("游戏", game_id, "已结束")
             else:
                 print("游戏id错误")
 
@@ -132,7 +148,7 @@ class Monitor:
 
         # 获取处理指令
         def get_cmd(self):
-            cmd = input()
+            cmd = input(">>>")
             t = Thread(target=self.process_cmd, args=(cmd,))
             t.start()
 
@@ -140,7 +156,7 @@ class Monitor:
             while not self.stop:
                 self.get_cmd()
             print("正在停止")
-            self.server.stop()
+            self.kill()
 
 
 if __name__ == "__main__":
