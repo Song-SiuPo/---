@@ -154,7 +154,16 @@ class GameCore:
             print('GameCore Error', e)
         '''
         self.list_refresh()
-
+        if  self.info.operate_queue.empty():
+            self.circle.refresh()
+            self.item_refresh()
+            self.check_winner()
+            self.refresh_output()
+            self.info.time = self.info.time + 1
+            if len(self.info.tank_list) == 1:
+                return self.info.tank_list[0].tank_id
+            else:
+                return -1
 
         while not self.info.operate_queue.empty():
 
