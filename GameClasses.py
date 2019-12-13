@@ -9,7 +9,7 @@ class GlobalInfo:
     poison = 0.1
     tank_v = 0.1
     # tank_size = 1
-    ammo_v = 0.1
+    ammo_v = 10
     ammo_attack = 10
     # circle_v = 1
     ammo_num = 0
@@ -49,7 +49,7 @@ class GlobalInfo:
 
 class Tank:
 
-    def __init__(self, tank_id, hp, ammo, kill, x, y, direction, info):
+    def __init__(self, tank_id, hp, ammo, kill,  direction, x, y,info):
         self.tank_id = tank_id
         self.hp = hp
         self.ammo = ammo
@@ -79,7 +79,8 @@ class Tank:
         for brick in self.info.brick_list:
             if (-0.5 <= temp_x-brick.x <=1.5 )&(-0.5 <= temp_y-brick.y <=1.5):
                 return
-
+        if temp_x >= 100 or temp_x <= 0 or temp_y >= 100 or temp_x <= 0:
+            return
         self.x = temp_x
         self.y = temp_y
         for item in self.info.item_list:
@@ -114,6 +115,9 @@ class Ammo:
         self.y = self.y - math.cos(self.direction) * self.info.ammo_v
 
     def refresh(self):
+        if self.x >= 100 or self.x <= 0 or self.y >= 100 or self.x <= 0:
+            self.exist = 0
+            return
         for tank in self.info.tank_list:
             if (self.x-tank.x)*(self.x-tank.x)+(self.y-tank.y)*(self.y-tank.y) <= 0.25 and self.tank_id != tank.tank_id:
                 tank.hp = tank.hp - self.info.ammo_attack
@@ -128,6 +132,10 @@ class Ammo:
                 self.exist = 0
                 brick.disappear()
                 self.info.brick_changed.append(brick)
+                self.info.brick_list.remove(brick)
+                break
+
+
 
 
 

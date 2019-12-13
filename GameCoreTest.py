@@ -1,7 +1,7 @@
 from GameCore import *
 server_dict = {'info':[1,0,5,0,1189,0,375],   #扩展、winner、坦克数、子弹数、障碍物数、道具数、草丛数
 
-    'tanks':[[0,100,50,0,18,5.32,4.52],[1,100,50,0,0,90.32,90.52],[2,100,50,0,0,5.32,90.52],[3,10,90,0,0,90.32,4.52],[4,100,50,0,0,50.32,40.52]],
+    'tanks':[[123,100,50,0,0,50.0,80.0],[143,100,50,0,0,50.0,70.0],[223,100,50,0,0,50.0,60.0],[233,100,50,0,0,50.0,50.0],[404,100,50,0,0,50.0,40.0]],
 
     'bulls':[],
 
@@ -177,12 +177,19 @@ server_dict = {'info':[1,0,5,0,1189,0,375],   #扩展、winner、坦克数、子
 game = GameCore(0)
 game.game_init(server_dict)
 
-for i in range(10):
-    for j in range(5):
-        game.input_data([j, 1, 0, 1, 0, 1])
-    game.gaming()
+
+winner = -1
+
+while winner==-1:
+    for tank in game.info.tank_list:
+        #game.input_data([tank.tank_id, random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1), random.randint(0, 1)])
+        game.input_data([tank.tank_id, 0, 0, 0, 0,1])
+        print(tank.tank_id, tank.hp, tank.ammo)
+    winner = game.gaming()
     out_data = game.output_data()
-    print(out_data)
+
+print(winner)
+
 
 
 '''

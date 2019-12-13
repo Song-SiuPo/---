@@ -40,7 +40,6 @@ class GameCore:
             if t.hp > 0:
                 alive_count = alive_count + 1
                 alive_id = t.tank_id
-
         if alive_count == 1:
             self.info.winner = alive_id
 
@@ -74,17 +73,22 @@ class GameCore:
         for ammo in self.info.ammo_list:
             if ammo.exist == 0:
                 self.info.ammo_list.remove(ammo)
+
         for brick in self.info.brick_list:
             if brick.exist == 0:
-                #print(self.info.brick_list)
                 self.info.brick_list.remove(brick)
-                #print(self.info.brick_list)
+
+        self.info.brick_changed.clear()
+
         for item in self.info.item_list:
             if item.exist == 0:
                 self.info.item_list.remove(item)
 
+        self.info.item_changed.clear()
+
     def gaming(self):
         # operation_num = operate_queue.qsize()
+        '''
         try:
             self.list_refresh()
             while not self.info.operate_queue.empty():
@@ -115,33 +119,39 @@ class GameCore:
         except Exception as e:
             print('GameCore Error', e)
         '''
-        try:
-            self.list_refresh()
-            while not self.info.operate_queue.empty():
-                operate = self.info.operate_queue.get()
+        self.list_refresh()
 
-                tank_id = operate[0]
-                up = operate[1]
-                down = operate[2]
-                left = operate[3]
-                right = operate[4]
-                fire = operate[5]
-                tank = self.info.tank_list[tank_id]
-                tank.shoot(fire)
-                tank.drive(up, down, left, right)
 
-                for ammo in self.info.ammo_list:
-                    ammo.move()
-                    ammo.refresh()
+        while not self.info.operate_queue.empty():
 
-                self.circle.refresh()
-                self.item_refresh()
-                self.check_winner()
-                self.refresh_output()
-                self.info.time = self.info.time+1
-        except Exception as e:
-            print('GameCore Error',e)
-        '''
+            operate = self.info.operate_queue.get()
+
+            tank_id = operate[0]
+            up = operate[1]
+            down = operate[2]
+            left = operate[3]
+            right = operate[4]
+            fire = operate[5]
+            for t in self.info.tank_list:
+                if t.tank_id == tank_id:
+                    tank = t
+                    tank.shoot(fire)
+                    tank.drive(up, down, left, right)
+                    break
+
+            for ammo in self.info.ammo_list:
+                ammo.move()
+                ammo.refresh()
+
+            self.circle.refresh()
+            self.item_refresh()
+            self.check_winner()
+            self.refresh_output()
+            self.info.time = self.info.time + 1
+            if len(self.info.tank_list) == 1:
+                return self.info.tank_list[0].tank_id
+            else:
+                return -1
 
 
 
