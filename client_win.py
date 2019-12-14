@@ -65,11 +65,13 @@ class MenuPage(tk.Frame):
         self.icons_load = [tk.PhotoImage(file='res/loading.gif', format=('gif -index %d' % i)) for i in range(12)]
         self._icon_index = 0
         self.waiting = False
+        self.getinitmap = False
 
     def game_wait(self):
         """
         按下"开始游戏"按钮
         """
+        self.getinitmap = False
         if not self.waiting:
             # 从主界面到开始等待匹配状态
             self.canvas.pack(padx=10, pady=5)
@@ -98,27 +100,47 @@ class MenuPage(tk.Frame):
         if self.waiting:
             data = self.connect.get_udp_data()
             if data:
-                self.game_wait()
-                self.master.toGamePage(data)
+                self.connect.game_start()
+                self.connect.tcp_link()
+                self.after(0, self._trygetinitmap)
             else:
-                self.after(10, self._try_start)
+                self.after(5, self._try_start)
 
     def exit_exe(self):
         self.waiting = False
+
+    def _trygetinitmap(self):
+        if not self.getinitmap:
+            self.after(5, self._trygetinitmap)
+            data = self.connect.get_tcp_data()
+            if data:
+                self.getinitmap = True
+                self.connect.tcp_unlink()
+                self.game_wait()
+                self.master.toGamePage(data)
 
 
 class GamePage(tk.Frame):
     """
     开始游戏后的界面
     """
-    def __init__(self, master, connector: Connector, *args, **kwargs):
+    def __init__(self, master, connector, *args, **kwargs):
         tk.Frame.__init__(self, master, *args, **kwargs)
 
         self.connect = connector
         self.canvas_main = tk.Canvas(self, width=800, height=600)
-        self.canvas_main.pack(side=tk.RIGHT, padx=5, pady=5)
+        self.canvas_main.pack(padx=5, pady=5)
+        self.frame1 = tk.Frame(self)
+        self.frame1.pack(side=tk.BOTTOM, padx=10, pady=5)
+        tk.Label(self.frame1, text='生命值').pack(side=tk.LEFT, padx=15, pady=5)
+        self.label_hp = tk.Label(self.frame1, text='')
+        self.label_hp.pack(side=tk.LEFT, padx=15, pady=5)
+        tk.Label(self.frame1, text='子弹数').pack(side=tk.LEFT, padx=15, pady=5)
+        self.label_bullet = tk.Label(self.frame1, text='')
+        self.label_bullet.pack(side=tk.LEFT, padx=15, pady=5)
+
+        self.player_id = 0
         self.key_down = {'Up': 0, 'Down': 0, 'Left': 0, 'Right': 0, 'fire': 0}  # 按下的按键
-        self.game_step = 0
         self.game_end = False
 
     def key_handler(self, event):
@@ -137,12 +159,14 @@ class GamePage(tk.Frame):
         elif event.keysym == 'Return' or event.keysym == 'space':
             self.key_down['fire'] = 1
 
-    def game_start(self, mapdata):
+    def game_start(self, mapdata, playerid):
         """
         游戏的初始化
         """
         self.game_end = False
-        self.game_step = 0
+        self.player_id = playerid
+        print(mapdata)
+        self.label_hp.config(text=str(1))
         self.master.bind('<KeyPress>', self.key_handler)
         self.after(0, self._game)
         self.after(0, self._key_trans)
@@ -154,9 +178,9 @@ class GamePage(tk.Frame):
         """
         if not self.game_end:
             self.after(30, self._game)
-            self.game_step += 1
-            if self.game_step > 300:
-                self.game_end = True
+            data = self.connect.get_udp_data()
+            if data:
+                print(data)
         else:
             self.after(0, self.ending)
 
@@ -167,7 +191,7 @@ class GamePage(tk.Frame):
         if not self.game_end:
             keydict = deepcopy(self.key_down)
             keydict['id'] = self.master.player_id
-            delay = 10
+            delay = 5
             for value in self.key_down.values():
                 if value == 1:
                     delay = 30
@@ -181,9 +205,14 @@ class GamePage(tk.Frame):
         """
         游戏结束相关处理
         """
+        self.game_end = True
+        self.connect.game_end()
         self.master.bind('<KeyPress>', None)
         showinfo('游戏结束', '游戏结束，你的击杀数为0，排名没有')
         self.master.toMenuPage()
+
+    def readHPBullet(self, mapdata):
+        pass
 
 
 class MainForm(tk.Tk):
@@ -197,7 +226,7 @@ class MainForm(tk.Tk):
                                      self.winfo_screenheight() / 2 - 150))
 
         self.connect = Connector()
-        self.connect.start()
+        self.connect.udpStart()
         self.player_id = 0
 
         self.cur_page = '0'   # '0'为登录界面，'1'为主菜单，'2'为游戏界面
@@ -229,7 +258,7 @@ class MainForm(tk.Tk):
                                   self.winfo_screenheight() / 2 - 350))
 
         self.cur_page = '2'
-        self.after(0, self.game_page.game_start, mapdata)
+        self.after(0, self.game_page.game_start, mapdata, self.player_id)
 
     def exit_win(self):
         if self.cur_page == '2':
