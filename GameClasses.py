@@ -14,40 +14,38 @@ class GlobalInfo:  #游戏的全局参数和全局变量
     tank_life = 100
     tank_ammo = 50
     # circle_v = 1
-    ammo_num = 0
 
 
     item_hp = 10
     item_ammo = 10
+    def __init__(self):
+        self.ammo_num = 0
+        self.current_x1 = 1
+        self.current_y1 = 2
+        self.current_x2 = 3
+        self.current_y2 = 4
 
-    current_x1 = 1
-    current_y1 = 2
-    current_x2 = 3
-    current_y2 = 4
+        self.brick_list = []
+        self.item_list = []
 
-    brick_list = []
-    item_list = []
+        self.operate_queue = Queue()
+        self.operate_dict = {}
 
-    operate_queue = Queue()
-    operate_dict = {}
+        self.ammo_list = []
+        self.tank_list = []
+        self.brick_changed = []
+        self.item_changed = []
+        self.winner = -1
 
-    ammo_list = []
-    tank_list = []
-    brick_changed = []
-    item_changed = []
-    winner = -1
+        self.information = []
+        self.tanks = []
+        self.bulls = []
+        self.obs = []
+        self.glass = []
+        self.props = []
+        self.safe = []
 
-
-    information = []
-    tanks = []
-    bulls = []
-    obs = []
-    glass = []
-    props = []
-    safe = []
-
-
-    output_dict = {'info':information,'tanks': tanks, 'bulls':bulls, 'obs': obs, 'props': props , 'safe': safe}
+        self.output_dict = {'info':self.information,'tanks': self.tanks, 'bulls':self.bulls, 'obs': self.obs, 'props': self.props , 'safe': self.safe}
 
 
 class Tank:
