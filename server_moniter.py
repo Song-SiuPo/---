@@ -6,17 +6,20 @@ from game_server import Game_server
 from threading import Thread
 import copy
 from tcp_server import TCP_server
+from stop_thread import stop_thread
+import time
 
 
 class Monitor:
     def __init__(self):
         self.server = None
-        self.tcp_server = None
         # 指令字典
         self.command = {"begin": {    # 开始某项进程
                             "server": self.run_server,
-                            "tcp_server": self.run_tcp,
                             "all":self.run
+                        },
+                        "restart": {
+                            "server": self.restart,
                         },
                         "kill": {    # 停止某项进程
                             "server": self.kill,
@@ -31,7 +34,8 @@ class Monitor:
                         },
                         "monitor": {
                             "receive":  self.monitor_receive,
-                            "send":  self.monitor_send
+                            "send":  self.monitor_send,
+                            "all": self.monitor_all
                         },
                         "stop": {
                             "receive": self.stop_receive,
@@ -41,6 +45,10 @@ class Monitor:
         self.stop = False
 
     if "monitor":
+        def monitor_all(self, time = None):
+            self.monitor_receive(time)
+            self.monitor_send(time)
+
         def monitor_receive(self, time = None):
             print("开始监听接收数据")
             self.server.begin_rec_info()
@@ -60,6 +68,7 @@ class Monitor:
             self.server.end_rec_info()
 
         def stop_send(self):
+            print("stop send")
             self.server.end_send_info()
 
     if "peek":
@@ -96,6 +105,11 @@ class Monitor:
                 for k,v in threads.items():
                     print("游戏id:", k)
 
+    def restart(self):
+        self.kill_self()
+        time.sleep(1)
+        self.run()
+
     if "begin":
         def run_server(self, addr=("10.128.181.188", 23456)):
             host, port = addr
@@ -104,27 +118,25 @@ class Monitor:
             self.server.run(host, port)
             print("游戏服务器在-", host, "-端口-", port, "上开始")
 
-        def run_tcp(self, addr=("10.128.181.188", 5000)):
-            host, port = addr
-            self.tcp_server = TCP_server()
-            self.tcp_server.run(addr)
-            print("tcp服务器在-", host, "-端口-", port, "上开始")
-
         def run(self):
             self.run_server()
-            self.run_tcp()
+            self.monitor_all()
 
     if "kill":
         def kill(self):
             self.server.stop()
-            self.tcp_server.stop_fun()
             print("服务器结束")
 
         # 结束某局游戏
         def kill_game(self, game_id):
-            if game_id in self.server.get_games_thread().keys():
-                self.server.get_games_thread()[game_id].join()
-                print("游戏", game_id, "已结束")
+            if len(game_id)>0:
+                game_id = game_id[0]
+                if int(game_id) in self.server.get_games_thread().keys():
+                    stop_thread(self.server.get_games_thread()[int(game_id)])
+                    del self.server.get_games_thread()[int(game_id)]
+                    print("游戏", game_id, "已结束")
+                else:
+                    print("游戏id错误")
             else:
                 print("游戏id错误")
 
