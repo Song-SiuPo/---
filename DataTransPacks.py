@@ -99,20 +99,20 @@ def unpack_server_data(end_str):
 
 #第二行的包-坦克信息-7
     for i in range(numtanks):
-        plist = [all_tuple[6+1+7*i],all_tuple[6+2+7*i],all_tuple[6+3+7*i],all_tuple[6+4+7*i],all_tuple[6+5+7*i],all_tuple[6+6+7*i],all_tuple[6+7+7*i]]
+        plist = [all_tuple[6+7*i],all_tuple[6+1+7*i],all_tuple[6+2+7*i],all_tuple[6+3+7*i],all_tuple[6+4+7*i],all_tuple[6+5+7*i],all_tuple[6+6+7*i]]
         unpack_dict["tanks"].append(plist)
 #第三行的包-子弹信息-5
     for i in range(numbulls):
-        plist = [all_tuple[6+7*numtanks+1+5*i],all_tuple[6+7*numtanks+2+5*i],all_tuple[6+7*numtanks+3+5*i],all_tuple[6+7*numtanks+4+5*i],all_tuple[6+7*numtanks+5+5*i]]
+        plist = [all_tuple[6+7*numtanks+5*i],all_tuple[6+7*numtanks+1+5*i],all_tuple[6+7*numtanks+2+5*i],all_tuple[6+7*numtanks+3+5*i],all_tuple[6+7*numtanks+4+5*i]]
         unpack_dict["bulls"].append(plist)
 #第四行的包-障碍物信息-2
     for i in range(numobs):
-        plist = [all_tuple[6+7*numtanks+5*numbulls+1+2*i],all_tuple[6+7*numtanks+5*numbulls+2+2*i]]
+        plist = [all_tuple[6+7*numtanks+5*numbulls+2*i],all_tuple[6+7*numtanks+5*numbulls+1+2*i]]
         unpack_dict["obs"].append(plist)
 #第六行的包-道具信息-5
     #props
     for i in range(numprops):
-        plist = [all_tuple[6+7*numtanks+5*numbulls+2*numobs+1+5*i],all_tuple[6+7*numtanks+5*numbulls+2*numobs+2+5*i],all_tuple[6+7*numtanks+5*numbulls+2*numobs+3+5*i],all_tuple[6+7*numtanks+5*numbulls+2*numobs+4+5*i],all_tuple[6+7*numtanks+5*numbulls+2*numobs+5+5*i]]
+        plist = [all_tuple[6+7*numtanks+5*numbulls+2*numobs+5*i],all_tuple[6+7*numtanks+5*numbulls+2*numobs+1+5*i],all_tuple[6+7*numtanks+5*numbulls+2*numobs+2+5*i],all_tuple[6+7*numtanks+5*numbulls+2*numobs+3+5*i],all_tuple[6+7*numtanks+5*numbulls+2*numobs+4+5*i]]
         unpack_dict["props"].append(plist)
 #第七行的包-安全区信息-8
     unpack_dict["safe"] = [all_tuple[-8],all_tuple[-7],all_tuple[-6],all_tuple[-5],all_tuple[-4],all_tuple[-3],all_tuple[-2],all_tuple[-1]]
