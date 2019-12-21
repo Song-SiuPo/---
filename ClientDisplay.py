@@ -1,7 +1,6 @@
 #客户端可视化函数
 #输出为客户端显示截图
-from PIL import Image, ImageDraw, ImageFont, ImageTk
-from copy import deepcopy
+from PIL import Image, ImageDraw, ImageFont
 
 
 class ClientDisplay:
@@ -39,10 +38,16 @@ class ClientDisplay:
         # 障碍物剔除
         # TODO:这里的逻辑爆炸
         for i in range(ChangeDict['info'][4] - 1, -1, -1):
+            for obs in self.mapdict['obs']:
+                if obs == ChangeDict['obs'][i]:
+                    self.mapdict['obs'].remove(obs)
+                    break
+            '''
             for j in range(self.mapdict['info'][4]):
                 if self.mapdict['obs'][j] == ChangeDict['obs'][i]:
                     self.mapdict['obs'].pop(j)
                     break
+            '''
 
         self.mapdict['info'][4] = self.mapdict['info'][4] - ChangeDict['info'][4]  # obs
 
@@ -50,18 +55,26 @@ class ClientDisplay:
         # TODO:这里也要改
         for i in range(ChangeDict['info'][5] - 1, -1, -1):
             if ChangeDict['props'][i][2] == 0:  # 消失
+                for prop in self.mapdict['props']:
+                    if prop[3] == ChangeDict['props'][i][3] \
+                            and prop[4] == ChangeDict['props'][i][4]:
+                        self.mapdict['props'].remove(prop)
+                        break
+                '''
                 for j in range(self.mapdict['info'][5]):
                     if self.mapdict['props'][j][3] == ChangeDict['props'][i][3] \
                             and self.mapdict['props'][j][4] == ChangeDict['props'][i][4]:
                         self.mapdict['props'].pop(j)
                         break
+                '''
         for prop in ChangeDict['props']:
-            if prop[2] == 0:  # 出现
+            if prop[2] == 1:  # 出现
                 self.mapdict['props'].append(prop)
         self.mapdict['info'][5] = len(self.mapdict['props'])
 
     def Draw(self):
-        img_all = deepcopy(self.img_back)
+
+        img_all = self.img_back.crop((0, 0, self.img_back.width, self.img_back.height))
         self.all_map = img_all
         #
         Nowdict = self.mapdict
@@ -87,7 +100,7 @@ class ClientDisplay:
             Y = 5
         # 得到了XY，开始贴图
         # 贴自己
-        img_s = self.img_selftank.rotate(selftank[4])
+        img_s = self.img_selftank.rotate(-selftank[4])
         img_all.paste(img_s, (int((X-0.5) * 50), int((Y-0.5) * 50)))
         # 贴障碍物
         for i in range(Nowdict['info'][4]):
@@ -116,9 +129,9 @@ class ClientDisplay:
             thingY = Nowdict['bulls'][i][4] - selfY + Y
             if thingX < 11 and thingY < 11:
                 if Nowdict['bulls'][i][2] == 0:  # 正常
-                    img_all.paste(self.img_bull, (int(thingX * 50), int(thingY * 50)))
+                    img_all.paste(self.img_bull, (int((thingX-0.5) * 50), int((thingY-0.5) * 50)))
                 else:  # 加子弹
-                    img_all.paste(self.img_bullbomb, (int(thingX * 50), int(thingY * 50)))
+                    img_all.paste(self.img_bullbomb, (int((thingX-0.5) * 50), int((thingY-0.5) * 50)))
         # 贴安全区
 
         # 贴其他坦克
@@ -154,7 +167,7 @@ class ClientDisplay:
 
     # 输出小地图
     def SmallMap(self):
-        img_small = deepcopy(self.img_smap)
+        img_small = self.img_smap.crop()
         self.small_map = img_small
         selftank = self.findplayertank(self.ID)
         selfX = selftank[5]
