@@ -42,11 +42,15 @@ class GameCore:
                 x = random.randint(self.circle.current_x1, self.circle.current_x2)
                 y = random.randint(self.circle.current_y1, self.circle.current_y2)
                 type_id = random.randint(0, 1)
-                self.info.item_changed.append(Item(x, y, type_id))
+                temp_item1 = Item(x, y, type_id)
+                self.info.item_changed.append(temp_item1)
+                self.info.item_list.append(temp_item1)
                 x = random.randint(self.circle.current_x1, self.circle.current_x2)
                 y = random.randint(self.circle.current_y1, self.circle.current_y2)
                 type_id = random.randint(0, 1)
-                self.info.item_changed.append(Item(x, y, type_id))
+                temp_item2 = Item(x, y, type_id)
+                self.info.item_changed.append(temp_item2)
+                self.info.item_list.append(temp_item2)
 
     def check_winner(self):
         alive_count = 0
