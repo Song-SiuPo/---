@@ -6,10 +6,10 @@ import random
 class GlobalInfo:  #游戏的全局参数和全局变量
     time = 0
     length = 1
-    poison = 0.1
+    poison = 0.01
     tank_v = 0.1
     # tank_size = 1
-    ammo_v = 10
+    ammo_v = 0.5
     ammo_attack = 10
     tank_life = 100
     tank_ammo = 50
@@ -72,20 +72,20 @@ class Tank:
             self.hp = self.hp - self.info.poison
 
         self.direction = self.direction + (right - left)
-        temp_x = self.x + math.sin(self.direction) * self.info.tank_v*(up-down)
-        temp_y = self.y - math.cos(self.direction) * self.info.tank_v*(up-down)
+        temp_x = self.x + math.sin(math.radians(self.direction)) * self.info.tank_v*(up-down)
+        temp_y = self.y - math.cos(math.radians(self.direction)) * self.info.tank_v*(up-down)
         for tank in self.info.tank_list:
             if 0.1<(temp_x - tank.x) * (temp_x - tank.x) + (temp_y - tank.y) * (temp_y - tank.y) <= 1.0:
                 return
         for brick in self.info.brick_list:
-            if (-0.5 <= temp_x-brick.x <=1.5 )&(-0.5 <= temp_y-brick.y <=1.5):
+            if (-0.5 <= temp_x-brick.x <=1.5 )and(-0.5 <= temp_y-brick.y <=1.5):
                 return
         if temp_x >= 100 or temp_x <= 0 or temp_y >= 100 or temp_x <= 0:
             return
         self.x = temp_x
         self.y = temp_y
         for item in self.info.item_list:
-            if (-0.5 <= self.x - item.x <= 1.5) & (-0.5 <= self.y - item.y <= 1.5):
+            if (-0.5 <= self.x - item.x <= 1.5) and (-0.5 <= self.y - item.y <= 1.5):
                 item.disappear()
                 self.info.item_changed.append(item)
                 if item.type_id ==0:
@@ -112,8 +112,8 @@ class Ammo:
         self.exist = 1
         self.info = info
     def move(self):
-        self.x = self.x + math.sin(self.direction) * self.info.ammo_v
-        self.y = self.y - math.cos(self.direction) * self.info.ammo_v
+        self.x = self.x + math.sin(math.radians(self.direction)) * self.info.ammo_v
+        self.y = self.y - math.cos(math.radians(self.direction)) * self.info.ammo_v
 
     def refresh(self):
         if self.x >= 100 or self.x <= 0 or self.y >= 100 or self.y <= 0:
@@ -129,7 +129,7 @@ class Ammo:
                             t.kill = t.kill + 1   #这里可以加上杀人信息
 
         for brick in self.info.brick_list:
-            if (0 < self.x-brick.x <=1 )&(0 < self.y-brick.y <=1):
+            if (0 < self.x-brick.x <=1 )and(0 < self.y-brick.y <=1):
                 self.exist = 0
                 brick.disappear()
                 self.info.brick_changed.append(brick)
@@ -190,7 +190,7 @@ class Circle:
         self.target_y2 = target_y2
 
     def refresh(self):
-        if self.info.time%10*30==0:
+        if self.info.time%(10*30)==0:
             self.current_x1 = self.current_x1 + int(self.current_x1 < self.target_x1)
             self.current_y1 = self.current_y1 + int(self.current_y1 < self.target_y1)
             self.current_x2 = self.current_x2 - int(self.current_x2 > self.target_x2)

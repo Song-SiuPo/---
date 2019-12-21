@@ -155,6 +155,11 @@ class GameCore:
         '''
         self.list_refresh()
         if  self.info.operate_queue.empty():
+            for ammo in self.info.ammo_list:
+                ammo.move()
+                ammo.refresh()
+            for t in self.info.tank_list:
+                t.drive(0,0,0,0)
             self.circle.refresh()
             self.item_refresh()
             self.check_winner()
