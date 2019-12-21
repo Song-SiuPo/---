@@ -28,6 +28,7 @@ class TCP_server():
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.bind(addr)
             self.socket.listen(32)
+            print("tcp服务器在-", addr[0], "-端口-", addr[1], "上开始")
         except Exception as e:
             print("绑定tcp端口失败")
             raise e
