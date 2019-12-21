@@ -52,7 +52,10 @@ class Connector:
             self.tcp_start = True
 
     def tcp_unlink(self):
+        self.tcpsocket.shutdown(2)
         self.tcpsocket.close()
+        self.tcpsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
 
     def _thread_udpsend(self):
         while not self.end_flag:
