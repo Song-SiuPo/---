@@ -11,6 +11,7 @@ import GameCore
 from DataTransPacks import *
 from stop_thread import stop_thread
 from start_map_sample import server_dict
+from tcp_server import TCP_server
 
 
 class Game_server():
@@ -23,6 +24,8 @@ class Game_server():
         self.send_info = False
         # 服务器socket
         self.server_socket = None
+        # TCP_server
+        self.tcp_server = TCP_server()
 
         # 接受到的客户端的消息队列
         self.message_queue = Queue()
@@ -127,7 +130,7 @@ class Game_server():
                 self.server_socket.bind((host, port))
             except Exception as e:
                 raise e
-
+            self.tcp_server.run()
             self.begin_receive()
             self.begin_send()
             self.begin_handle()
@@ -139,7 +142,7 @@ class Game_server():
             while not self.stop_handle:
                 # 如果待处理队列为空则休息
                 if self.message_queue.empty():
-                    time.sleep(0.01)
+                    time.sleep(0.005)
                 else:
                     # 处理消息，有开始游戏的请求以及游戏进行中的数据传输
                     data, client_addr = self.message_queue.get()
@@ -153,48 +156,45 @@ class Game_server():
             try:
                 player_id = unpack_data["id"]
             except Exception as e:
-                print("数据报错误")
+                print("数据包错误")
                 print(e)
+                return
 
             # 开始游戏的任务
             if "begin_game" in unpack_data.keys() and unpack_data["begin_game"] == 1:
                 # 注册玩家ip地址和id
                 if player_id not in self.players_ip.keys():
+                    self.players_ip[player_id] = client_addr
+                    self.player_queue.put(player_id)
+                else:
+                    self.players_ip[player_id] = client_addr
+                # 如果人数足够，就开始游戏
+                if self.player_queue.qsize() >= self.min_num:
+                    players = []
+                    while (not self.player_queue.empty()) and len(players) < self.max_num:
+                        players.append(self.player_queue.get())
+                    cur_id = self.cur_game_id
+                    self.cur_game_id += 1
+                    # 向玩家发送游戏开始消息
+                    for pid in players:
+                        self.message_to_send.put((str(pid).encode("utf-8"), self.players_ip[pid]))
+
+                    # 等待客户端收到地图数据
+                    time.sleep(1)
+                    # 开始游戏线程
                     try:
-                        self.players_ip[player_id] = client_addr
-                        self.player_queue.put(player_id)
-                        # 如果人数足够，就开始游戏
-                        if self.player_queue.qsize() >= self.min_num:
-                            players = []
-                            while (not self.player_queue.empty()) and len(players)<self.max_num:
-                                players.append(self.player_queue.get())
-                            cur_id = self.cur_game_id + 1
-
-                            # 向玩家发送游戏开始消息
-                            for pid in players:
-                                self.message_to_send.put((str(pid).encode("utf-8"),self.players_ip[pid]))
-                            # 等待客户端收到地图数据
-                            time.sleep(1)
-
-                            try:
-                                cur_game = threading.Thread(target=self.begin_game,args=(players,cur_id))
-                                cur_game.start()
-                                self.games_threads[cur_id] = cur_game
-                            except Exception as e:
-                                print("游戏开始错误")
-                                print(e)
+                        cur_game = threading.Thread(target=self.begin_game,args=(players,cur_id))
+                        cur_game.start()
+                        self.games_threads[cur_id] = cur_game
                     except Exception as e:
-                        print("数据包错误")
+                        print("游戏开始错误")
                         print(e)
-
             # 向游戏发送数据
             else:
                 if player_id in self.players_game.keys():
                     tar_game_id = self.players_game[player_id]
-                    self.game_message[tar_game_id].put(unpack_data)
-                else:
-                    pass
-                    # TODO：报错：错误的信息
+                    if tar_game_id in self.game_message.keys():
+                        self.game_message[tar_game_id].put(unpack_data)
 
         # 进入游戏的循环
         def begin_game(self,players,cur_id):
@@ -219,22 +219,34 @@ class Game_server():
 
             # 开始游戏
             cur_game = GameCore.GameCore(cur_id)
+            print("jiaruwanjia", players)
             cur_game.game_init(server_dict, players)
             stop = False
             while not stop:
                 while not self.game_message[cur_id].empty():
                     cur_game.input_data(self.game_message[cur_id].get())
-                cur_data = cur_game.gaming()
+                winner = cur_game.gaming()
+                cur_data = cur_game.output_data()
                 # 处理要发送的数据的数据，即添加玩家的地址信息，然后加入发送队列
-                if len(cur_data["information"])>0:
-                    winner = cur_data["information"][1]
+                try:
                     data_pack = pack_server_data(cur_data)
                     for pid in players_come_in:
-                        self.message_queue.put((data_pack, self.players_ip[pid]))
-                    if winner != -1:
-                        stop = True
+                        self.message_to_send.put((data_pack, self.players_ip[pid]))
+                except Exception as e:
+                    print("打包出错")
+                    print(e)
+                    print(cur_data)
+                # 如果有胜者产生则删除玩家所在对局并停止游戏循环
+                if winner != -1:
+                    stop = True
+                    for player in players_come_in:
+                        del self.players_game[player]
+                        del self.game_message[cur_id]
+
                 # 控制处理速度
-                time.sleep(0.015)
+                time.sleep(0.03)
+            # 删除游戏线程记录
+            del self.games_threads[cur_id]
 
         # 发送待发送消息队列的数据
         def send_data(self):
@@ -244,14 +256,14 @@ class Game_server():
             while not self.stop_send:
                 # 如果发送队列为空，则休息0.02秒
                 if self.message_to_send.empty():
-                    time.sleep(0.02)
+                    time.sleep(0.005)
                 else:
                     data,addr = self.message_to_send.get()
                     if self.send_info:
                         try:
-                            print(unpack_server_data(data))
+                            print("发送数据:",unpack_server_data(data))
                         except:
-                            print(data.decode("utf-8"))
+                            print("发送数据:", data.decode("utf-8"))
                     self.server_socket.sendto(data, addr)
 
         # 接收数据,将数据放入消息队列
@@ -269,6 +281,7 @@ class Game_server():
         def stop(self):
             if self.server_socket:
                 self.stop_receive = self.stop_send = self.stop_handle = True
+                self.tcp_server.stop_fun()
                 stop_thread(self.receive_thread)
                 print("接收线程停止")
                 for t in self.games_threads.values():
@@ -289,5 +302,6 @@ if __name__ == "__main__":
     my_server = Game_server()
     my_server.run("localhost",23456)
     my_server.stop()
+
 
 
