@@ -88,6 +88,7 @@ class Tank:
             if (-0.5 <= self.x - item.x <= 1.5) and (-0.5 <= self.y - item.y <= 1.5):
                 item.disappear()
                 self.info.item_changed.append(item)
+                self.info.item_list.remove(item)
                 if item.type_id ==0:
                     tank.hp = tank.hp + self.info.item_hp
                 elif  item.type_id ==1:
