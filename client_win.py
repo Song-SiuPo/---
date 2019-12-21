@@ -8,9 +8,6 @@ from client_connector import Connector
 from copy import deepcopy
 from ClientDisplay import ClientDisplay
 from PIL import ImageTk
-from threading import Thread
-
-from GameCore import GameCore
 
 
 class LoginPage(tk.Frame):
@@ -160,8 +157,6 @@ class GamePage(tk.Frame):
         self.key_down = {'Up': 0, 'Down': 0, 'Left': 0, 'Right': 0, 'fire': 0}  # 按下的按键
         self.game_end = False
 
-        self.gamecore = GameCore(2)
-
     def key_handler(self, event):
         """
         对按键事件的响应，持续按则持续响应
@@ -185,8 +180,6 @@ class GamePage(tk.Frame):
         self.game_end = False
         self.player_id = playerid
 
-        self.gamecore.game_init(mapdata, [playerid, 1])
-
         self._readplayer_info(mapdata['tanks'])
         self.mapdisplay = ClientDisplay(mapdata, self.player_id)
         self.canvas_main.delete(tk.ALL)
@@ -205,10 +198,8 @@ class GamePage(tk.Frame):
         游戏30帧主循环
         """
         if not self.game_end:
-            #data = self.connect.get_udp_data()
+            data = self.connect.get_udp_data()
             self.after(30, self._game)
-            self.gamecore.gaming()
-            data = self.gamecore.output_data()
             if data:
                 self.mapdisplay.changedict(data)
                 self.canvas_main.delete(tk.ALL)
@@ -239,8 +230,7 @@ class GamePage(tk.Frame):
             for value in self.key_down.values():
                 if value == 1:
                     delay = 30
-                    #self.connect.send_data_udp(keydict)
-                    self.gamecore.input_data(keydict)
+                    self.connect.send_data_udp(keydict)
                     break
             self.key_down = {'Up': 0, 'Down': 0, 'Left': 0, 'Right': 0, 'fire': 0}
             self.after(delay, self._key_trans)
