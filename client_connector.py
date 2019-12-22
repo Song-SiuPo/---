@@ -3,7 +3,7 @@
 '''
 
 
-from multiprocessing import Process, Queue
+from multiprocessing import Queue
 from threading import Thread
 from time import sleep
 import socket
@@ -12,75 +12,123 @@ import DataTransPacks as pac
 
 class Connector:
     _serverIP = '10.128.181.188'
-    _serverPort = 23456
+    _udpPort = 23456
+    _tcpPort = 5000
 
     def __init__(self):
-        # self.tcpsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.tcpsocket.connect((__class__._serverIP, __class__._serverPort))
-        # self.udpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.inqueue = Queue()
-        self.outqueue = Queue()
-        self.endqueue = Queue(4)
-        self.process = Process(target=self._thread_main, args=(self.inqueue, self.outqueue, self.endqueue))
+        self.tcpsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.udpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.inqueue_udp = Queue()
+        self.outqueue_udp = Queue()
+        self.inqueue_tcp = Queue()
+        self.outqueue_tcp = Queue()
+        self.end_flag = False
+        self.map_init = False
+        self.tcp_start = False
+        self.udpsendth = Thread(target=self._thread_udpsend)
+        self.udplistenth = Thread(target=self._thread_udplisten)
+        self.tcpsendth = Thread(target=self._thread_tcpsend)
+        self.tcplistenth = Thread(target=self._thread_tcplisten)
+        self.stress = False
 
-    def start(self):
-        self.process.start()
+    def game_start(self):
+        self.map_init = True
+
+    def game_end(self):
+        self.map_init = False
+
+    def udpStart(self):
+        self.udpsendth.start()
+        self.udplistenth.start()
 
     def end(self):
-        self.endqueue.put(True)
+        self.end_flag = True
+        self.udpsocket.close()
 
-    def _thread_main(self, inq:Queue, outq:Queue, endq:Queue):
-        def listen(sock:socket.socket, outqueue, endq):
-            while endq.empty():
-                data = None
-                try:
-                    data, addr = sock.recvfrom(1024)
-                except OSError as e:
-                    pass
-                if data:
-                    outqueue.put(data)
-                sleep(0.01)
+    def tcp_link(self):
+        self.tcpsocket.connect((__class__._serverIP, __class__._tcpPort))
+        if not self.tcp_start:
+            self.tcplistenth.start()
+            self.tcpsendth.start()
+            self.tcp_start = True
 
-        udpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        end_flag = []   # 当列表不空，则发消息
-        listen_th = Thread(target=listen, args=(udpsocket, outq, endq))
-        listen_th.start()
+    def tcp_unlink(self):
+        self.tcpsocket.shutdown(2)
+        self.tcpsocket.close()
+        self.tcpsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        while True:
+
+    def _thread_udpsend(self):
+        while not self.end_flag:
             # 准备向服务器传消息
-            if not inq.empty():
-                data = inq.get()
-                udpsocket.sendto(data, (__class__._serverIP, __class__._serverPort))
-            if not endq.empty():
-                break
-            sleep(0.01)
+            if not self.inqueue_udp.empty():
+                data = self.inqueue_udp.get()
+                self.udpsocket.sendto(data, (__class__._serverIP, __class__._udpPort))
+            sleep(0.005)
 
-        udpsocket.close()
+    def _thread_udplisten(self):
+        while not self.end_flag:
+            data = None
+            try:
+                data, addr = self.udpsocket.recvfrom(32768)
+            except OSError as e:
+                if e.errno != 10022 and e.errno != 10038:
+                    raise e
+            if data:
+                if self.map_init:
+                    self.outqueue_udp.put(pac.unpack_server_data(data))
+                else:
+                    self.outqueue_udp.put(pac.unpack_client_data(data))
+            sleep(0.005)
 
-    '''
+    def _thread_tcpsend(self):
+        while not self.end_flag:
+            # 准备向服务器传消息
+            if not self.inqueue_tcp.empty():
+                data = self.inqueue_tcp.get()
+                self.tcpsocket.send(data)
+            sleep(0.005)
+
+    def _thread_tcplisten(self):
+        while not self.end_flag:
+            data = None
+            try:
+                if self.map_init:
+                    data = int(self.tcpsocket.recv(1024).decode('utf-8'))
+                    buffer = b""
+                    while len(buffer) < data:
+                        buffer += self.tcpsocket.recv(1024)
+                    data = pac.unpack_client_data(buffer)
+                else:
+                    data = self.tcpsocket.recv(32768)
+            except OSError as e:
+                if e.errno != 10057 and e.errno != 10038:
+                    raise e
+            if data:
+                self.outqueue_tcp.put(data)
+            sleep(0.005)
+
     def send_data_tcp(self, diction):
         binary = pac.pack_client_data(diction)
-        self.tcpsocket.send(binary)
-    '''
+        self.inqueue_tcp.put(binary)
+
     def send_data_udp(self, diction):
         binary = pac.pack_client_data(diction)
-        self.inqueue.put(binary)
-    '''
+        self.inqueue_udp.put(binary)
+        # print("发送", self.inqueue_udp.qsize())
+
     def get_tcp_data(self):
         # 接收tcp的信息
-        buffer = []
-        while True:
-            # 每次最多接收64k字节:
-            d = self.tcpsocket.recv(1024)
-            if d:
-                buffer.append(d)
-            else:
-                break
-        return pac.unpack_server_data(b''.join(buffer))
-    '''
+        if not self.outqueue_tcp.empty():
+            return self.outqueue_tcp.get()
+        return None
+
     def get_udp_data(self):
         # 接收udp的信息
-        if not self.outqueue.empty():
-            binary = self.outqueue.get()
-            return pac.unpack_server_data(binary)
+        if not self.outqueue_udp.empty():
+            # print("接收", self.outqueue_udp.qsize())
+            return self.outqueue_udp.get()
         return None
+
+    def outqueue_empty(self):
+        return self.outqueue_udp.empty()

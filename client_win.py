@@ -6,6 +6,9 @@ import tkinter as tk
 from tkinter.messagebox import askyesno, showerror, showinfo
 from client_connector import Connector
 from copy import deepcopy
+from ClientDisplay import ClientDisplay
+from PIL import ImageTk
+import time as t
 
 
 class LoginPage(tk.Frame):
@@ -41,11 +44,12 @@ class LoginPage(tk.Frame):
         """
         按下登录按钮后的行为
         """
-        if self.playerid.get().isdigit():
+        num = self.playerid.get()
+        if num.isdigit() and 0 < int(num) < (1 << 30):
             self.master.player_id = int(self.playerid.get())
             self.master.toMenuPage()
         else:
-            showerror('错误', '玩家ID必须是数字')
+            showerror('错误', '玩家ID必须是合理范围正整数')
 
     def regist(self):
         pass
@@ -55,7 +59,7 @@ class MenuPage(tk.Frame):
     """
     登录后的主界面，有开始游戏按钮
     """
-    def __init__(self, master, connector: Connector, *args, **kwargs):
+    def __init__(self, master, connector, *args, **kwargs):
         tk.Frame.__init__(self, master, *args, **kwargs)
 
         self.connect = connector
@@ -65,19 +69,21 @@ class MenuPage(tk.Frame):
         self.icons_load = [tk.PhotoImage(file='res/loading.gif', format=('gif -index %d' % i)) for i in range(12)]
         self._icon_index = 0
         self.waiting = False
+        self.getinitmap = False
 
     def game_wait(self):
         """
         按下"开始游戏"按钮
         """
+        self.getinitmap = False
         if not self.waiting:
             # 从主界面到开始等待匹配状态
             self.canvas.pack(padx=10, pady=5)
             self._icon_index = 0
             self.waiting = True
-            self.after(0, self.connect.send_data_udp, {'id': self.master.player_id, 'begin_game': 1})
-            self.after(0, self._change_icon)
             self.button_start.config(text='取消等待')
+            self.after(0, self._change_icon)
+            self.after(0, self.connect.send_data_udp, {'id': self.master.player_id, 'begin_game': 1})
             self.after(0, self._try_start)
         else:
             # 取消当前匹配
@@ -98,27 +104,59 @@ class MenuPage(tk.Frame):
         if self.waiting:
             data = self.connect.get_udp_data()
             if data:
-                self.game_wait()
-                self.master.toGamePage(data)
+                self.connect.game_start()
+                self.connect.tcp_link()
+                self.after(0, self._trygetinitmap)
             else:
-                self.after(10, self._try_start)
+                self.after(5, self._try_start)
 
     def exit_exe(self):
         self.waiting = False
+
+    def _trygetinitmap(self):
+        if not self.getinitmap:
+            self.after(5, self._trygetinitmap)
+            data = self.connect.get_tcp_data()
+            if data:
+                self.getinitmap = True
+                self.connect.tcp_unlink()
+                self.game_wait()
+                self.master.toGamePage(data)
 
 
 class GamePage(tk.Frame):
     """
     开始游戏后的界面
     """
-    def __init__(self, master, connector: Connector, *args, **kwargs):
+    def __init__(self, master, connector, *args, **kwargs):
         tk.Frame.__init__(self, master, *args, **kwargs)
 
         self.connect = connector
-        self.canvas_main = tk.Canvas(self, width=800, height=600)
-        self.canvas_main.pack(side=tk.RIGHT, padx=5, pady=5)
+        self.mapdisplay = None
+
+        self.canvas_main = tk.Canvas(self, width=600, height=600)
+        self.canvas_main.pack(padx=5, pady=5)
+        self.frame1 = tk.Frame(self)
+        self.frame1.pack(side=tk.BOTTOM, padx=10, pady=5)
+        tk.Label(self.frame1, text='生命值').pack(side=tk.LEFT, padx=10, pady=5)
+        self.label_hp = tk.Label(self.frame1, text='')
+        self.label_hp.pack(side=tk.LEFT, padx=(10, 30), pady=5)
+        tk.Label(self.frame1, text='子弹数').pack(side=tk.LEFT, padx=(30, 10), pady=5)
+        self.label_bullet = tk.Label(self.frame1, text='')
+        self.label_bullet.pack(side=tk.LEFT, padx=(10, 30), pady=5)
+        tk.Label(self.frame1, text='杀敌').pack(side=tk.LEFT, padx=(30, 10), pady=5)
+        self.label_kill = tk.Label(self.frame1, text='')
+        self.label_kill.pack(side=tk.LEFT, padx=(10, 30), pady=5)
+        tk.Label(self.frame1, text='剩余玩家').pack(side=tk.LEFT, padx=(30, 10), pady=5)
+        self.rank = tk.IntVar()
+        self.label_rank = tk.Label(self.frame1, textvariable=self.rank)
+        self.label_rank.pack(side=tk.LEFT, padx=10, pady=5)
+
+        self.all_map = None
+        self.small_map = None
+        self.delay = 30
+        self.player_id = 0
         self.key_down = {'Up': 0, 'Down': 0, 'Left': 0, 'Right': 0, 'fire': 0}  # 按下的按键
-        self.game_step = 0
         self.game_end = False
 
     def key_handler(self, event):
@@ -137,12 +175,25 @@ class GamePage(tk.Frame):
         elif event.keysym == 'Return' or event.keysym == 'space':
             self.key_down['fire'] = 1
 
-    def game_start(self, mapdata):
+    def game_start(self, mapdata, playerid):
         """
         游戏的初始化
         """
         self.game_end = False
-        self.game_step = 0
+        self.player_id = playerid
+        self.delay = 30
+
+        self._readplayer_info(mapdata['tanks'])
+        self.mapdisplay = ClientDisplay(mapdata, self.player_id)
+        '''
+        self.canvas_main.delete(tk.ALL)
+        self.all_map = ImageTk.PhotoImage(self.mapdisplay.Draw())
+        self.small_map = ImageTk.PhotoImage(self.mapdisplay.SmallMap())
+        self.canvas_main.create_image(0, 0, anchor=tk.NW,
+                                      image=self.all_map)
+        self.canvas_main.create_image(0, 0, anchor=tk.NW,
+                                      image=self.small_map)
+        '''
         self.master.bind('<KeyPress>', self.key_handler)
         self.after(0, self._game)
         self.after(0, self._key_trans)
@@ -150,15 +201,45 @@ class GamePage(tk.Frame):
     def _game(self):
         """
         游戏30帧主循环
-        :return:
         """
         if not self.game_end:
-            self.after(30, self._game)
-            self.game_step += 1
-            if self.game_step > 300:
-                self.game_end = True
-        else:
-            self.after(0, self.ending)
+            data = self.connect.get_udp_data()
+            # self.after(int(self.delay) + 1, self._game)
+            if data:
+                self.mapdisplay.changedict(data)
+                # 尝试改成读多条记录返回一张图，不知是否有改善
+                while not self.connect.outqueue_empty():
+                    data = self.connect.get_udp_data()
+                    self.mapdisplay.changedict(data)
+                nowtime = t.time()
+                allmap = self.mapdisplay.Draw()
+                smallmap = self.mapdisplay.SmallMap()
+                self.canvas_main.delete(tk.ALL)
+                del self.all_map
+                del self.small_map
+                self.all_map = ImageTk.PhotoImage(allmap)
+                self.small_map = ImageTk.PhotoImage(smallmap)
+                self.canvas_main.create_image(0, 0, anchor=tk.NW,
+                                              image=self.all_map)
+                self.canvas_main.create_image(0, 0, anchor=tk.NW,
+                                              image=self.small_map)
+                self.delay = (t.time() - nowtime) * 1000
+                if self.delay < 30:
+                    self.delay = 30
+                else:
+                    print(self.delay)
+                if 'tanks' in data:
+                    self._readplayer_info(data['tanks'])
+                if int(self.label_hp['text']) <= 0:
+                    self.after(0, self.ending)
+                elif 'info' in data and data['info'][1] >= 0 and int(self.label_hp['text']) > 0:
+                    self.after(0, self.ending)
+                '''
+                if len(data['props']) > 0:
+                    print("props", data['props'])
+                '''
+            self.after(1, self._game)
+                # print('yes')
 
     def _key_trans(self):
         """
@@ -166,23 +247,36 @@ class GamePage(tk.Frame):
         """
         if not self.game_end:
             keydict = deepcopy(self.key_down)
-            keydict['id'] = self.master.player_id
-            delay = 10
+            keydict['id'] = self.player_id
+            delay = 30
             for value in self.key_down.values():
                 if value == 1:
                     delay = 30
                     self.connect.send_data_udp(keydict)
-                    print(self.key_down)
                     break
             self.key_down = {'Up': 0, 'Down': 0, 'Left': 0, 'Right': 0, 'fire': 0}
             self.after(delay, self._key_trans)
+
+    def _readplayer_info(self, tanks):
+        '''
+        传入从服务器来的坦克信息列表，更改自己的信息
+        '''
+        self.rank.set(len(tanks))
+        for tank in tanks:
+            if tank[0] == self.player_id:
+                self.label_hp.config(text=tank[1])
+                self.label_bullet.config(text=tank[2])
+                self.label_kill.config(text=tank[3])
+                break
 
     def ending(self):
         """
         游戏结束相关处理
         """
+        self.game_end = True
+        self.connect.game_end()
         self.master.bind('<KeyPress>', None)
-        showinfo('游戏结束', '游戏结束，你的击杀数为0，排名没有')
+        showinfo('游戏结束', '游戏结束，你的击杀数为%s，排名第%d' % (self.label_kill['text'], self.rank.get()))
         self.master.toMenuPage()
 
 
@@ -197,7 +291,7 @@ class MainForm(tk.Tk):
                                      self.winfo_screenheight() / 2 - 150))
 
         self.connect = Connector()
-        self.connect.start()
+        self.connect.udpStart()
         self.player_id = 0
 
         self.cur_page = '0'   # '0'为登录界面，'1'为主菜单，'2'为游戏界面
@@ -229,7 +323,7 @@ class MainForm(tk.Tk):
                                   self.winfo_screenheight() / 2 - 350))
 
         self.cur_page = '2'
-        self.after(0, self.game_page.game_start, mapdata)
+        self.after(0, self.game_page.game_start, mapdata, self.player_id)
 
     def exit_win(self):
         if self.cur_page == '2':
