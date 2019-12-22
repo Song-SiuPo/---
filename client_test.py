@@ -4,7 +4,7 @@ from time import sleep
 import tkinter as tk
 from tkinter.messagebox import showinfo
 from GameCore import GameCore
-from PIL import ImageTk
+from PIL import ImageTk, Image, ImageDraw
 from ClientDisplay import ClientDisplay
 from copy import deepcopy
 import DataTransPacks as pac
@@ -112,9 +112,13 @@ class GamePage(tk.Frame):
             if data:
                 self.mapdisplay.changedict(data)
                 nowtime = time.time()
-                self.all_map = ImageTk.PhotoImage(self.mapdisplay.Draw())
-                self.small_map = ImageTk.PhotoImage(self.mapdisplay.SmallMap())
+                allmap = self.mapdisplay.Draw()
+                smallmap = self.mapdisplay.SmallMap()
                 self.canvas_main.delete(tk.ALL)
+                del self.all_map
+                del self.small_map
+                self.all_map = ImageTk.PhotoImage(allmap)
+                self.small_map = ImageTk.PhotoImage(smallmap)
                 self.canvas_main.create_image(0, 0, anchor=tk.NW,
                                               image=self.all_map)
                 self.canvas_main.create_image(0, 0, anchor=tk.NW,
@@ -173,17 +177,28 @@ class GamePage(tk.Frame):
 
 
 if __name__ == '__main__':
+
     tki = tk.Tk()
     tki.geometry('%dx%d+%d+%d' % (800, 700, tki.winfo_screenwidth() / 2 - 400,
                                   tki.winfo_screenheight() / 2 - 350))
     gamepage = GamePage(tki, None)
     gamepage.place(in_=tki, x=0, y=0, relwidth=1, relheight=1)
     gamepage.game_start(init_dict, 4)
-    '''
-    def func():
-        gamepage.ending()
-        tki.destroy()
-    tki.protocol("WM_DELETE_WINDOW", func)
-    '''
     tki.mainloop()
+
+    '''
+    tki = tk.Tk()
+    tki.geometry('%dx%d+%d+%d' % (800, 700, tki.winfo_screenwidth() / 2 - 400,
+                                  tki.winfo_screenheight() / 2 - 350))
+    canvas = tk.Canvas(tki, width=500, height=500)
+    canvas.pack()
+    img = Image.new("RGB", (500,500), (192,192,192))
+    draw = ImageDraw.ImageDraw(img)
+    draw.ellipse((100, 100, 200,200), 'red')
+    bmptk = ImageTk.BitmapImage(img)
+    canvas.create_bitmap(0,0,anchor=tk.NW, bitmap=bmptk)
+    draw.ellipse((200, 200, 300, 300), 'blue')
+    tki.mainloop()
+    '''
     # gamepage.ending()
+

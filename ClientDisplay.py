@@ -21,8 +21,8 @@ class ClientDisplay:
         self.img_ammo = Image.open(r"res/ammo.png")
         self.img_smap = Image.open("res/smallmap.png")
 
-        self.all_map = None
-        self.small_map = None
+        self.all_map = self.img_back.copy()
+        self.small_map = self.img_smap.copy()
 
     # 获胜情况交给其他部分判断-只处理未获胜情况
     def changedict(self, ChangeDict):  # 默认21*21
@@ -38,7 +38,6 @@ class ClientDisplay:
         self.mapdict['bulls'] = ChangeDict['bulls']
         self.mapdict['safe'] = ChangeDict['safe']
         # 障碍物剔除
-        # TODO:这里的逻辑爆炸
         for i in range(ChangeDict['info'][4] - 1, -1, -1):
             for obs in self.mapdict['obs']:
                 if obs == ChangeDict['obs'][i]:
@@ -54,7 +53,6 @@ class ClientDisplay:
         self.mapdict['info'][4] = self.mapdict['info'][4] - ChangeDict['info'][4]  # obs
 
         # 道具
-        # TODO:这里也要改
         for i in range(ChangeDict['info'][5] - 1, -1, -1):
             if ChangeDict['props'][i][2] == 0:  # 消失
                 for prop in self.mapdict['props']:
@@ -76,9 +74,10 @@ class ClientDisplay:
 
     def Draw(self):
 
-        img_all = self.img_back.copy()
+        img_all = self.all_map
         #
         Nowdict = self.mapdict
+        img_all.paste(self.img_back, (0, 0))
         selftank = self.findplayertank(self.ID)
         selfX = selftank[5]
         selfY = selftank[6]
@@ -151,9 +150,6 @@ class ClientDisplay:
         draw = ImageDraw.Draw(img_all)
         font = ImageFont.truetype("consola.ttf", 13, encoding="unic")  # 设置字
         draw.text((0, 540), text, 'fuchsia', font)
-        if self.all_map:
-            self.all_map.close()
-        self.all_map = img_all
         return self.all_map
 
     # 判断坦克是否在草丛里
@@ -174,7 +170,8 @@ class ClientDisplay:
 
     # 输出小地图
     def SmallMap(self):
-        img_small = self.img_smap.copy()
+        img_small = self.small_map
+        img_small.paste(self.img_smap, (0, 0))
         selftank = self.findplayertank(self.ID)
         selfX = selftank[5]
         selfY = selftank[6]
@@ -183,9 +180,6 @@ class ClientDisplay:
         draw.rectangle((self.mapdict['safe'][4], self.mapdict['safe'][5], self.mapdict['safe'][6], self.mapdict['safe'][7]), 'green')
         # draw.line((selfX,selfY,selfX+1,selfY+1),'red')
         draw.ellipse((selfX - 2, selfY - 2, selfX + 2, selfY + 2), 'red')
-        if self.small_map:
-            self.small_map.close()
-        self.small_map = img_small
         return self.small_map
 
 '''

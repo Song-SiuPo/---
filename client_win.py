@@ -207,10 +207,14 @@ class GamePage(tk.Frame):
             self.after(int(self.delay) + 1, self._game)
             if data:
                 self.mapdisplay.changedict(data)
-                self.canvas_main.delete(tk.ALL)
                 nowtime = t.time()
-                self.all_map = ImageTk.PhotoImage(self.mapdisplay.Draw())
-                self.small_map = ImageTk.PhotoImage(self.mapdisplay.SmallMap())
+                allmap = self.mapdisplay.Draw()
+                smallmap = self.mapdisplay.SmallMap()
+                self.canvas_main.delete(tk.ALL)
+                del self.all_map
+                del self.small_map
+                self.all_map = ImageTk.PhotoImage(allmap)
+                self.small_map = ImageTk.PhotoImage(smallmap)
                 self.canvas_main.create_image(0, 0, anchor=tk.NW,
                                               image=self.all_map)
                 self.canvas_main.create_image(0, 0, anchor=tk.NW,
@@ -218,6 +222,8 @@ class GamePage(tk.Frame):
                 self.delay = (t.time() - nowtime) * 1000
                 if self.delay < 30:
                     self.delay = 30
+                else:
+                    print(self.delay)
                 if 'tanks' in data:
                     self._readplayer_info(data['tanks'])
                 if int(self.label_hp['text']) <= 0:
@@ -237,7 +243,7 @@ class GamePage(tk.Frame):
         if not self.game_end:
             keydict = deepcopy(self.key_down)
             keydict['id'] = self.player_id
-            delay = 5
+            delay = 30
             for value in self.key_down.values():
                 if value == 1:
                     delay = 30
