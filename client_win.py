@@ -8,6 +8,7 @@ from client_connector import Connector
 from copy import deepcopy
 from ClientDisplay import ClientDisplay
 from PIL import ImageTk
+import time as t
 
 
 class LoginPage(tk.Frame):
@@ -133,7 +134,7 @@ class GamePage(tk.Frame):
         self.connect = connector
         self.mapdisplay = None
 
-        self.canvas_main = tk.Canvas(self, width=800, height=800)
+        self.canvas_main = tk.Canvas(self, width=600, height=600)
         self.canvas_main.pack(padx=5, pady=5)
         self.frame1 = tk.Frame(self)
         self.frame1.pack(side=tk.BOTTOM, padx=10, pady=5)
@@ -153,6 +154,7 @@ class GamePage(tk.Frame):
 
         self.all_map = None
         self.small_map = None
+        self.delay = 30
         self.player_id = 0
         self.key_down = {'Up': 0, 'Down': 0, 'Left': 0, 'Right': 0, 'fire': 0}  # 按下的按键
         self.game_end = False
@@ -179,9 +181,11 @@ class GamePage(tk.Frame):
         """
         self.game_end = False
         self.player_id = playerid
+        self.delay = 30
 
         self._readplayer_info(mapdata['tanks'])
         self.mapdisplay = ClientDisplay(mapdata, self.player_id)
+        '''
         self.canvas_main.delete(tk.ALL)
         self.all_map = ImageTk.PhotoImage(self.mapdisplay.Draw())
         self.small_map = ImageTk.PhotoImage(self.mapdisplay.SmallMap())
@@ -189,6 +193,7 @@ class GamePage(tk.Frame):
                                       image=self.all_map)
         self.canvas_main.create_image(0, 0, anchor=tk.NW,
                                       image=self.small_map)
+        '''
         self.master.bind('<KeyPress>', self.key_handler)
         self.after(0, self._game)
         self.after(0, self._key_trans)
@@ -199,24 +204,30 @@ class GamePage(tk.Frame):
         """
         if not self.game_end:
             data = self.connect.get_udp_data()
-            self.after(30, self._game)
+            self.after(int(self.delay) + 1, self._game)
             if data:
                 self.mapdisplay.changedict(data)
                 self.canvas_main.delete(tk.ALL)
+                nowtime = t.time()
                 self.all_map = ImageTk.PhotoImage(self.mapdisplay.Draw())
                 self.small_map = ImageTk.PhotoImage(self.mapdisplay.SmallMap())
                 self.canvas_main.create_image(0, 0, anchor=tk.NW,
                                               image=self.all_map)
                 self.canvas_main.create_image(0, 0, anchor=tk.NW,
                                               image=self.small_map)
+                self.delay = (t.time() - nowtime) * 1000
+                if self.delay < 30:
+                    self.delay = 30
                 if 'tanks' in data:
                     self._readplayer_info(data['tanks'])
                 if int(self.label_hp['text']) <= 0:
                     self.after(0, self.ending)
                 elif 'info' in data and data['info'][1] >= 0 and int(self.label_hp['text']) > 0:
                     self.after(0, self.ending)
+                '''
                 if len(data['props']) > 0:
                     print("props", data['props'])
+                '''
                 # print('yes')
 
     def _key_trans(self):
@@ -226,7 +237,7 @@ class GamePage(tk.Frame):
         if not self.game_end:
             keydict = deepcopy(self.key_down)
             keydict['id'] = self.player_id
-            delay = 30
+            delay = 5
             for value in self.key_down.values():
                 if value == 1:
                     delay = 30
@@ -253,7 +264,7 @@ class GamePage(tk.Frame):
         """
         self.game_end = True
         self.connect.game_end()
-        self.master.bind('<KeyUp>', None)
+        self.master.bind('<KeyPress>', None)
         showinfo('游戏结束', '游戏结束，你的击杀数为%s，排名第%d' % (self.label_kill['text'], self.rank.get()))
         self.master.toMenuPage()
 

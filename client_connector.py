@@ -74,6 +74,10 @@ class Connector:
                 if e.errno != 10022 and e.errno != 10038:
                     raise e
             if data:
+                # 渲染压力过大，清除无用帧信息
+                if self.outqueue_udp.qsize() > 5:
+                    while not self.outqueue_udp.empty():
+                        self.outqueue_udp.get()
                 if self.map_init:
                     self.outqueue_udp.put(pac.unpack_server_data(data))
                 else:
@@ -114,6 +118,7 @@ class Connector:
     def send_data_udp(self, diction):
         binary = pac.pack_client_data(diction)
         self.inqueue_udp.put(binary)
+        print("发送", self.inqueue_udp.qsize())
 
     def get_tcp_data(self):
         # 接收tcp的信息
@@ -124,5 +129,6 @@ class Connector:
     def get_udp_data(self):
         # 接收udp的信息
         if not self.outqueue_udp.empty():
+            print("接收", self.outqueue_udp.qsize())
             return self.outqueue_udp.get()
         return None

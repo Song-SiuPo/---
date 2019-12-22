@@ -11,7 +11,9 @@ class ClientDisplay:
         self.img_glass = Image.open(r"res/glass.png")
         self.img_obs = Image.open(r"res/obs.png")
         self.img_bull = Image.open(r"res/bull.png")
-        self.img_bullbomb = Image.open(r"res/bullbomb.png")
+        bullbomb = Image.open(r"res/bullbomb.png")
+        self.img_bullbomb = bullbomb.convert("RGBA")
+        bullbomb.close()
         self.img_othertank = Image.open(r"res/othertank.png")
         self.img_safe = Image.open(r"res/safe.png")
         self.img_selftank = Image.open(r"res/selftank.png")
@@ -74,8 +76,7 @@ class ClientDisplay:
 
     def Draw(self):
 
-        img_all = self.img_back.crop((0, 0, self.img_back.width, self.img_back.height))
-        self.all_map = img_all
+        img_all = self.img_back.copy()
         #
         Nowdict = self.mapdict
         selftank = self.findplayertank(self.ID)
@@ -101,7 +102,17 @@ class ClientDisplay:
         # 得到了XY，开始贴图
         # 贴自己
         img_s = self.img_selftank.rotate(-selftank[4])
-        img_all.paste(img_s, (int((X-0.5) * 50), int((Y-0.5) * 50)))
+        img_all.paste(img_s, (int((X-0.5) * 50), int((Y-0.5) * 50)), img_s)
+
+        # 贴其他坦克
+        for i in range(len(Nowdict['tanks'])):
+            thingX = Nowdict['tanks'][i][5] - selfX + X
+            thingY = Nowdict['tanks'][i][6] - selfY + Y
+            if thingX < 11 and thingY < 11:
+                if (Nowdict['tanks'][i][0] != self.ID) and (self.InGlass(Nowdict['tanks'][i][0]) == False):
+                    img_all.paste(self.img_othertank, (int((thingX - 0.5) * 50), int((thingY - 0.5) * 50)),
+                                  self.img_othertank)
+
         # 贴障碍物
         for i in range(Nowdict['info'][4]):
             thingX = Nowdict['obs'][i][0] - selfX + X
@@ -113,40 +124,36 @@ class ClientDisplay:
             thingX = Nowdict['grass'][i][0] - selfX + X
             thingY = Nowdict['grass'][i][1] - selfY + Y
             if thingX < 11 and thingY < 11:
-                img_all.paste(self.img_glass, (int(thingX * 50), int(thingY * 50)))
+                img_all.paste(self.img_glass, (int(thingX * 50), int(thingY * 50)), self.img_glass)
         # 贴道具
         for i in range(Nowdict['info'][5]):
             thingX = Nowdict['props'][i][3] - selfX + X
             thingY = Nowdict['props'][i][4] - selfY + Y
             if thingX < 11 and thingY < 11:
                 if Nowdict['props'][i][1] == 0:  # 加血
-                    img_all.paste(self.img_drug, (int(thingX * 50), int(thingY * 50)))
+                    img_all.paste(self.img_drug, (int(thingX * 50), int(thingY * 50)), self.img_drug)
                 else:  # 加子弹
-                    img_all.paste(self.img_ammo, (int(thingX * 50), int(thingY * 50)))
+                    img_all.paste(self.img_ammo, (int(thingX * 50), int(thingY * 50)), self.img_ammo)
         # 贴子弹
         for i in range(len(Nowdict['bulls'])):
             thingX = Nowdict['bulls'][i][3] - selfX + X  # 浮点数！！！
             thingY = Nowdict['bulls'][i][4] - selfY + Y
             if thingX < 11 and thingY < 11:
-                if Nowdict['bulls'][i][2] == 0:  # 正常
-                    img_all.paste(self.img_bull, (int((thingX-0.5) * 50), int((thingY-0.5) * 50)))
+                if Nowdict['bulls'][i][2] == 1:  # 正常
+                    img_all.paste(self.img_bull, (int((thingX-0.3) * 50), int((thingY-0.3) * 50)), self.img_bull)
                 else:  # 加子弹
-                    img_all.paste(self.img_bullbomb, (int((thingX-0.5) * 50), int((thingY-0.5) * 50)))
+                    img_all.paste(self.img_bullbomb, (int((thingX-0.3) * 50), int((thingY-0.3) * 50)), self.img_bullbomb)
         # 贴安全区
 
-        # 贴其他坦克
-        for i in range(len(Nowdict['tanks'])):
-            thingX = Nowdict['tanks'][i][5] - selfX + X
-            thingY = Nowdict['tanks'][i][6] - selfY + Y
-            if thingX < 11 and thingY < 11:
-                if (Nowdict['tanks'][i][0] != self.ID) and (self.InGlass(Nowdict['tanks'][i][0]) == False):
-                    img_all.paste(self.img_othertank, (int((thingX-0.5) * 50), int((thingY-0.5) * 50)))
         # 贴血量、id、子弹数、杀敌数
         text = 'ID:' + str(self.ID) + '   LifeValue:' + str(selftank[1]) + '   Bulls:' + str(
             selftank[2]) + '   Kills:' + str(selftank[3])
         draw = ImageDraw.Draw(img_all)
         font = ImageFont.truetype("consola.ttf", 13, encoding="unic")  # 设置字
         draw.text((0, 540), text, 'fuchsia', font)
+        if self.all_map:
+            self.all_map.close()
+        self.all_map = img_all
         return self.all_map
 
     # 判断坦克是否在草丛里
@@ -167,8 +174,7 @@ class ClientDisplay:
 
     # 输出小地图
     def SmallMap(self):
-        img_small = self.img_smap.crop()
-        self.small_map = img_small
+        img_small = self.img_smap.copy()
         selftank = self.findplayertank(self.ID)
         selfX = selftank[5]
         selfY = selftank[6]
@@ -177,6 +183,9 @@ class ClientDisplay:
         draw.rectangle((self.mapdict['safe'][4], self.mapdict['safe'][5], self.mapdict['safe'][6], self.mapdict['safe'][7]), 'green')
         # draw.line((selfX,selfY,selfX+1,selfY+1),'red')
         draw.ellipse((selfX - 2, selfY - 2, selfX + 2, selfY + 2), 'red')
+        if self.small_map:
+            self.small_map.close()
+        self.small_map = img_small
         return self.small_map
 
 '''
