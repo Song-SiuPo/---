@@ -23,7 +23,7 @@ class TCP_server():
 
     # 运行tcp服务器
     # 端口号：5000
-    def run(self, addr=("10.128.181.188", 5000)):
+    def run(self, addr=("127.0.0.1", 5000)):
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.bind(addr)
