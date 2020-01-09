@@ -12,6 +12,7 @@ from DataTransPacks import *
 from stop_thread import stop_thread
 from start_map_sample import server_dict
 from tcp_server import TCP_server
+import copy
 
 
 class Game_server():
@@ -37,7 +38,7 @@ class Game_server():
         # 单局最大玩家数量
         self.max_num = 10
         # 单局最小玩家数量
-        self.min_num = 1
+        self.min_num = 2
 
         # 玩家的id与ip的字典,接收请求开始游戏的消息时处理
         self.players_ip = {}
@@ -46,7 +47,7 @@ class Game_server():
 
         # 当前的游戏id
         self.cur_game_id = 10000
-        # 游戏的id与要发给对应游戏的消息队列
+        # 游戏的id与对应接收消息的函数
         self.game_message = {}
 
         # 接收消息的线程
@@ -118,7 +119,7 @@ class Game_server():
 
     if "server_function":
         # 开始游戏服务器
-        def run(self, host, port):
+        def run(self, host, port = 23456):
             """
             调用以开始游戏服务器
             :param host: 服务器绑定的主机地址 "10.128.181.188"
@@ -130,7 +131,7 @@ class Game_server():
                 self.server_socket.bind((host, port))
             except Exception as e:
                 raise e
-            self.tcp_server.run()
+            self.tcp_server.run((host, 5000))
             self.begin_receive()
             self.begin_send()
             self.begin_handle()
@@ -142,7 +143,7 @@ class Game_server():
             while not self.stop_handle:
                 # 如果待处理队列为空则休息
                 if self.message_queue.empty():
-                    time.sleep(0.005)
+                    time.sleep(0.001)
                 else:
                     # 处理消息，有开始游戏的请求以及游戏进行中的数据传输
                     data, client_addr = self.message_queue.get()
@@ -190,27 +191,35 @@ class Game_server():
                         print("游戏开始错误")
                         print(e)
             # 向游戏发送数据
+            #elif "time1" in unpack_data.keys():
+             #   t = time.time()*1000
+              #  dct = {"time1": unpack_data["time1"],"time2":t}
+               # time1 = unpack_data["time1"]
+                #print("time1:",time1,t-time1)
+                #data = pack_client_data(dct)
+                #self.message_to_send.put((data, client_addr))
             else:
                 if player_id in self.players_game.keys():
                     tar_game_id = self.players_game[player_id]
-                    if tar_game_id in self.game_message.keys():
-                        self.game_message[tar_game_id].put(unpack_data)
+                    if tar_game_id in self.game_message and self.game_message[tar_game_id]:
+                        self.game_message[tar_game_id](unpack_data)
+                    #if tar_game_id in self.game_message.keys():
+                        #self.game_message[tar_game_id].put(unpack_data)
 
         # 进入游戏的循环
         def begin_game(self,players,cur_id):
             """
             开始游戏线程，和游戏对象交换数据
             :param players: 加入本局游戏的玩家id
-            :param data: 传入的初始化信息  ------#TODO：地图设计
+            :param data: 传入的初始化信息
             :param cur_id: 本局游戏的id
             """
-            print("开始游戏", cur_id)
-            self.game_message[cur_id] = Queue()
+            print("开始游戏，游戏id:", cur_id)
             # 最终加入游戏的玩家
             players_come_in = []
             # 添加玩家和游戏id的映射
             for pid in players:
-                if pid in self.players_game.keys() and  self.players_game[pid]:
+                if pid in self.players_game.keys():
                     # TODO 向玩家发送错误
                     pass
                 else:
@@ -219,12 +228,11 @@ class Game_server():
 
             # 开始游戏
             cur_game = GameCore.GameCore(cur_id)
-            print("jiaruwanjia", players)
+            self.game_message[cur_id] = cur_game.input_data
+            print("加入玩家", players)
             cur_game.game_init(server_dict, players)
             stop = False
             while not stop:
-                while not self.game_message[cur_id].empty():
-                    cur_game.input_data(self.game_message[cur_id].get())
                 winner = cur_game.gaming()
                 cur_data = cur_game.output_data()
                 # 处理要发送的数据的数据，即添加玩家的地址信息，然后加入发送队列
@@ -237,16 +245,18 @@ class Game_server():
                     print(e)
                     print(cur_data)
                 # 如果有胜者产生则删除玩家所在对局并停止游戏循环
-                if winner != -1:
+                if winner != -1:             #winner != -1:
                     stop = True
+                    print("游戏结束，胜利者是", winner)
                     for player in players_come_in:
                         del self.players_game[player]
                         del self.game_message[cur_id]
-
                 # 控制处理速度
                 time.sleep(0.03)
+
             # 删除游戏线程记录
             del self.games_threads[cur_id]
+            print("游戏",cur_id,"结束")
 
         # 发送待发送消息队列的数据
         def send_data(self):
@@ -258,7 +268,7 @@ class Game_server():
                 if self.message_to_send.empty():
                     time.sleep(0.005)
                 else:
-                    data,addr = self.message_to_send.get()
+                    data, addr = self.message_to_send.get()
                     if self.send_info:
                         try:
                             print("发送数据:",unpack_server_data(data))
@@ -285,7 +295,7 @@ class Game_server():
                 stop_thread(self.receive_thread)
                 print("接收线程停止")
                 for t in self.games_threads.values():
-                    t.join()
+                    stop_thread(t)
                 # 发送完所有消息后停止服务器
                 while self.message_to_send.qsize() != 0:
                     print("等待消息队列清空")
@@ -297,11 +307,25 @@ class Game_server():
             else:
                 print("服务器没有启动")
 
+        def kill_game(self, game_id):
+            if len(game_id)>0:
+                game_id = game_id[0]
+                if int(game_id) in self.get_games_thread().keys():
+                    stop_thread(self.get_games_thread()[int(game_id)])
+                    del self.get_games_thread()[int(game_id)]
+                    for k,v in self.players_game:
+                        if v == game_id:
+                            del self.players_game[k]
+                    print("游戏", game_id, "已结束")
+                else:
+                    print("游戏id错误")
+            else:
+                print("游戏id错误")
+
 
 if __name__ == "__main__":
     my_server = Game_server()
     my_server.run("localhost",23456)
-    my_server.stop()
 
 
 
