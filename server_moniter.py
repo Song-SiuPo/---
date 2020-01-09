@@ -45,6 +45,7 @@ class Monitor:
         self.stop = False
 
     if "monitor":
+
         def monitor_all(self, time = None):
             self.monitor_receive(time)
             self.monitor_send(time)
@@ -111,34 +112,26 @@ class Monitor:
         self.run()
 
     if "begin":
-        def run_server(self, addr=("10.128.181.188", 23456)):
+        def run_server(self, addr=("127.0.0.1", 23456)):
             host, port = addr
             port = int(port)
             self.server = Game_server()
             self.server.run(host, port)
             print("游戏服务器在-", host, "-端口-", port, "上开始")
 
-        def run(self):
-            self.run_server()
+        def run(self, addr=("127.0.0.1", 23456)):
+            self.run_server(addr)
             self.monitor_all()
 
     if "kill":
         def kill(self):
-            self.server.stop()
-            print("服务器结束")
+            if self.server:
+                self.server.stop()
+                print("服务器结束")
 
         # 结束某局游戏
         def kill_game(self, game_id):
-            if len(game_id)>0:
-                game_id = game_id[0]
-                if int(game_id) in self.server.get_games_thread().keys():
-                    stop_thread(self.server.get_games_thread()[int(game_id)])
-                    del self.server.get_games_thread()[int(game_id)]
-                    print("游戏", game_id, "已结束")
-                else:
-                    print("游戏id错误")
-            else:
-                print("游戏id错误")
+            self.server.kill_game(game_id)
 
         def kill_self(self):
             self.stop = True
@@ -167,11 +160,14 @@ class Monitor:
         def monitor_run(self):
             while not self.stop:
                 self.get_cmd()
-            print("正在停止")
+
+            # 服务器结束
             self.kill()
+            print("服务器停止")
 
 
 if __name__ == "__main__":
     m = Monitor()
     m.monitor_run()
+    #m.run_server()
 
