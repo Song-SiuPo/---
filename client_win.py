@@ -204,13 +204,6 @@ class GamePage(tk.Frame):
         """
         if not self.game_end:
             data = self.connect.get_udp_data()
-            # self.after(int(self.delay) + 1, self._game)
-            if data:
-                self.mapdisplay.changedict(data)
-                # 尝试改成读多条记录返回一张图，不知是否有改善
-                while not self.connect.outqueue_empty():
-                    data = self.connect.get_udp_data()
-                    self.mapdisplay.changedict(data)
             self.after(int(self.delay) + 1, self._game)
             if data:
                 self.mapdisplay.changedict(data)
@@ -241,8 +234,6 @@ class GamePage(tk.Frame):
                 if len(data['props']) > 0:
                     print("props", data['props'])
                 '''
-            self.after(1, self._game)
-
                 # print('yes')
 
     def _key_trans(self):
