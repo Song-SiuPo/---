@@ -3,49 +3,54 @@ from queue import Queue
 
 import random
 
-class GlobalInfo:
+class GlobalInfo:  #游戏的全局参数和全局变量
     time = 0
     length = 1
-    poison = 0.1
+    poison = 0.01
     tank_v = 0.1
     # tank_size = 1
-    ammo_v = 0.1
+    ammo_v = 0.5
     ammo_attack = 10
+    tank_life = 100
+    tank_ammo = 50
     # circle_v = 1
-    ammo_num = 0
+
 
     item_hp = 10
     item_ammo = 10
+    def __init__(self):
+        self.ammo_num = 0
+        self.current_x1 = 1
+        self.current_y1 = 2
+        self.current_x2 = 3
+        self.current_y2 = 4
 
-    current_x1 = 1
-    current_y1 = 2
-    current_x2 = 3
-    current_y2 = 4
+        self.brick_list = []
+        self.item_list = []
 
-    brick_list = []
-    item_list = []
+        self.operate_queue = Queue()
+        self.operate_dict = {}
 
-    operate_queue = Queue()
-    operate_dict = {}
+        self.ammo_list = []
+        self.tank_list = []
+        self.brick_changed = []
+        self.item_changed = []
+        self.winner = -1
 
-    ammo_list = []
-    tank_list = []
-    brick_changed = []
-    item_changed = []
+        self.information = []
+        self.tanks = []
+        self.bulls = []
+        self.obs = []
+        self.glass = []
+        self.props = []
+        self.safe = []
 
-    tanks = []
-    bulls = []
-    obs = []
-    glass = []
-    props = []
-
-
-    output_dict = {'tank': tank_list, 'ammo': ammo_list, 'brick': brick_changed, 'item': item_changed}
+        self.output_dict = {'info':self.information,'tanks': self.tanks, 'bulls':self.bulls, 'obs': self.obs, 'props': self.props , 'safe': self.safe}
 
 
 class Tank:
 
-    def __init__(self, tank_id, hp, ammo, kill, x, y, direction, info):
+    def __init__(self, tank_id, hp, ammo, kill,  direction, x, y,info):
         self.tank_id = tank_id
         self.hp = hp
         self.ammo = ammo
@@ -56,7 +61,7 @@ class Tank:
         self.info = info
 
     def shoot(self, fire):
-        if fire==1:
+        if fire==1 and self.ammo >= 1:
             self.ammo = self.ammo - 1
             self.info.ammo_num = self.info.ammo_num + 1
             self.info.ammo_list.append(Ammo(self.tank_id, self.info.ammo_num, self.x, self.y, self.direction, self.info))
@@ -67,21 +72,23 @@ class Tank:
             self.hp = self.hp - self.info.poison
 
         self.direction = self.direction + (right - left)
-        temp_x = self.x + math.sin(self.direction) * self.info.tank_v*(up-down)
-        temp_y = self.y - math.cos(self.direction) * self.info.tank_v*(up-down)
+        temp_x = self.x + math.sin(math.radians(self.direction)) * self.info.tank_v*(up-down)
+        temp_y = self.y - math.cos(math.radians(self.direction)) * self.info.tank_v*(up-down)
         for tank in self.info.tank_list:
             if 0.1<(temp_x - tank.x) * (temp_x - tank.x) + (temp_y - tank.y) * (temp_y - tank.y) <= 1.0:
                 return
         for brick in self.info.brick_list:
-            if (-0.5 <= temp_x-brick.x <=1.5 )&(-0.5 <= temp_y-brick.y <=1.5):
+            if (-0.5 <= temp_x-brick.x <=1.5 )and(-0.5 <= temp_y-brick.y <=1.5):
                 return
-
+        if temp_x >= 100 or temp_x <= 0 or temp_y >= 100 or temp_x <= 0:
+            return
         self.x = temp_x
         self.y = temp_y
         for item in self.info.item_list:
-            if (-0.5 <= self.x - item.x <= 1.5) & (-0.5 <= self.y - item.y <= 1.5):
+            if (-0.5 <= self.x - item.x <= 1.5) and (-0.5 <= self.y - item.y <= 1.5):
                 item.disappear()
                 self.info.item_changed.append(item)
+                self.info.item_list.remove(item)
                 if item.type_id ==0:
                     tank.hp = tank.hp + self.info.item_hp
                 elif  item.type_id ==1:
@@ -106,10 +113,13 @@ class Ammo:
         self.exist = 1
         self.info = info
     def move(self):
-        self.x = self.x + math.sin(self.direction) * self.info.ammo_v
-        self.y = self.y - math.cos(self.direction) * self.info.ammo_v
+        self.x = self.x + math.sin(math.radians(self.direction)) * self.info.ammo_v
+        self.y = self.y - math.cos(math.radians(self.direction)) * self.info.ammo_v
 
     def refresh(self):
+        if self.x >= 100 or self.x <= 0 or self.y >= 100 or self.y <= 0:
+            self.exist = 0
+            return
         for tank in self.info.tank_list:
             if (self.x-tank.x)*(self.x-tank.x)+(self.y-tank.y)*(self.y-tank.y) <= 0.25 and self.tank_id != tank.tank_id:
                 tank.hp = tank.hp - self.info.ammo_attack
@@ -120,10 +130,14 @@ class Ammo:
                             t.kill = t.kill + 1   #这里可以加上杀人信息
 
         for brick in self.info.brick_list:
-            if (0 < self.x-brick.x <=1 )&(0 < self.y-brick.y <=1):
+            if (0 < self.x-brick.x <=1 )and(0 < self.y-brick.y <=1):
                 self.exist = 0
                 brick.disappear()
                 self.info.brick_changed.append(brick)
+                self.info.brick_list.remove(brick)
+                break
+
+
 
 
 
@@ -162,6 +176,7 @@ class Circle:
     def __init__(self,
                  current_x1, current_y1, current_x2, current_y2,
                  target_x1, target_y1, target_x2, target_y2,  info):
+        self.info = info
         self.current_x1 = current_x1
         self.current_y1 = current_y1
         self.current_x2 = current_x2
@@ -174,13 +189,13 @@ class Circle:
         self.target_y1 = target_y1
         self.target_x2 = target_x2
         self.target_y2 = target_y2
-        self.info = info
+
     def refresh(self):
-        if self.info.time%10==0:
+        if self.info.time%(10*30)==0:
             self.current_x1 = self.current_x1 + int(self.current_x1 < self.target_x1)
             self.current_y1 = self.current_y1 + int(self.current_y1 < self.target_y1)
-            self.current_x2 = self.current_x2 + int(self.current_x2 < self.target_x2)
-            self.current_y2 = self.current_y2 + int(self.current_y2 < self.target_y2)
+            self.current_x2 = self.current_x2 - int(self.current_x2 > self.target_x2)
+            self.current_y2 = self.current_y2 - int(self.current_y2 > self.target_y2)
             self.info.current_x1 =  self.current_x1
             self.info.current_y1 = self.current_y1
             self.info.current_x2 = self.current_x2
@@ -190,4 +205,4 @@ class Circle:
             self.target_x1= self.target_x1 + random.randint(0, self.target_x2-self.target_x1)
             self.target_y1 = self.target_y1 + random.randint(0, self.target_y2-self.target_y1)
             self.target_x2 = self.target_x2 - random.randint(0, self.target_x2-self.target_x1)
-            self.target_y2 = self.target_y2 - random.randint(0, self.target_x2-self.target_x1)
+            self.target_y2 = self.target_y2 - random.randint(0, self.target_y2-self.target_y1)

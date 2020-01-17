@@ -211,6 +211,9 @@ class GamePage(tk.Frame):
                 while not self.connect.outqueue_empty():
                     data = self.connect.get_udp_data()
                     self.mapdisplay.changedict(data)
+            self.after(int(self.delay) + 1, self._game)
+            if data:
+                self.mapdisplay.changedict(data)
                 nowtime = t.time()
                 allmap = self.mapdisplay.Draw()
                 smallmap = self.mapdisplay.SmallMap()
@@ -239,6 +242,7 @@ class GamePage(tk.Frame):
                     print("props", data['props'])
                 '''
             self.after(1, self._game)
+
                 # print('yes')
 
     def _key_trans(self):

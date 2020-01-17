@@ -75,6 +75,10 @@ class Connector:
                 if e.errno != 10022 and e.errno != 10038:
                     raise e
             if data:
+                # 渲染压力过大，清除无用帧信息
+                if self.outqueue_udp.qsize() > 5:
+                    while not self.outqueue_udp.empty():
+                        self.outqueue_udp.get()
                 if self.map_init:
                     self.outqueue_udp.put(pac.unpack_server_data(data))
                 else:
