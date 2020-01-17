@@ -29,6 +29,7 @@ class Connector:
         self.udplistenth = Thread(target=self._thread_udplisten)
         self.tcpsendth = Thread(target=self._thread_tcpsend)
         self.tcplistenth = Thread(target=self._thread_tcplisten)
+        self.stress = False
 
     def game_start(self):
         self.map_init = True
@@ -118,7 +119,7 @@ class Connector:
     def send_data_udp(self, diction):
         binary = pac.pack_client_data(diction)
         self.inqueue_udp.put(binary)
-        print("发送", self.inqueue_udp.qsize())
+        # print("发送", self.inqueue_udp.qsize())
 
     def get_tcp_data(self):
         # 接收tcp的信息
@@ -129,6 +130,9 @@ class Connector:
     def get_udp_data(self):
         # 接收udp的信息
         if not self.outqueue_udp.empty():
-            print("接收", self.outqueue_udp.qsize())
+            # print("接收", self.outqueue_udp.qsize())
             return self.outqueue_udp.get()
         return None
+
+    def outqueue_empty(self):
+        return self.outqueue_udp.empty()
