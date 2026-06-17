@@ -23,6 +23,8 @@ class ClientDisplay:
 
         self.all_map = self.img_back.copy()
         self.small_map = self.img_smap.copy()
+        # 字体只加载一次，避免每帧从磁盘重新读取解析
+        self.font = ImageFont.truetype("consola.ttf", 13, encoding="unic")
 
     # 获胜情况交给其他部分判断-只处理未获胜情况
     def changedict(self, ChangeDict):  # 默认21*21
@@ -148,8 +150,7 @@ class ClientDisplay:
         text = 'ID:' + str(self.ID) + '   LifeValue:' + str(selftank[1]) + '   Bulls:' + str(
             selftank[2]) + '   Kills:' + str(selftank[3])
         draw = ImageDraw.Draw(img_all)
-        font = ImageFont.truetype("consola.ttf", 13, encoding="unic")  # 设置字
-        draw.text((0, 540), text, 'fuchsia', font)
+        draw.text((0, 540), text, 'fuchsia', self.font)
         return self.all_map
 
     # 判断坦克是否在草丛里

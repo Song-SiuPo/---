@@ -19,7 +19,9 @@ class GameCore:
                 y = random.randint(2, 98)
                 near_brick = False
                 for brick in server_dict['obs']:
-                    if abs(x - brick[0]) < 2 or abs(y - brick[1]) < 2:
+                    # 必须x和y都贴近某个障碍物才算“太近”。原来用or：障碍物几乎铺满所有
+                    # 行列，任意随机点都会命中→near_brick恒为真→死循环，服务器卡死在game_init。
+                    if abs(x - brick[0]) < 2 and abs(y - brick[1]) < 2:
                         near_brick = True
                         break
             if x==-1 or y == -1: #无视
@@ -78,7 +80,9 @@ class GameCore:
         self.info.information.append(len(self.info.item_changed))
         self.info.tanks.clear()
         for tank in self.info.tank_list:
-            self.info.tanks.append([tank.tank_id, tank.hp, tank.ammo, tank.kill, tank.direction, tank.x, tank.y])
+            # hp取整：安全区外会扣poison(0.01)使hp变成浮点，而pack_server_data按整型'i'打包，
+            # 否则一旦有人扣毒血就会struct.error，服务器停止发帧导致冻屏。
+            self.info.tanks.append([tank.tank_id, int(tank.hp), tank.ammo, tank.kill, tank.direction, tank.x, tank.y])
         self.info.bulls.clear()
         for ammo in self.info.ammo_list:
             self.info.bulls.append([ammo.tank_id, ammo.ammo_id, ammo.exist, ammo.x, ammo.y])

@@ -200,14 +200,15 @@ class GamePage(tk.Frame):
 
     def _game(self):
         """
-        游戏30帧主循环
+        游戏主循环：固定30ms间隔调度（与服务器广播频率一致）。
+        不要用上一帧的渲染耗时反过来当下一帧的延迟，否则一旦某帧变慢就会
+        正反馈锁死到1fps（PPT现象）。
         """
         if not self.game_end:
+            self.after(30, self._game)
             data = self.connect.get_udp_data()
-            self.after(int(self.delay) + 1, self._game)
             if data:
                 self.mapdisplay.changedict(data)
-                nowtime = t.time()
                 allmap = self.mapdisplay.Draw()
                 smallmap = self.mapdisplay.SmallMap()
                 self.canvas_main.delete(tk.ALL)
@@ -219,11 +220,6 @@ class GamePage(tk.Frame):
                                               image=self.all_map)
                 self.canvas_main.create_image(0, 0, anchor=tk.NW,
                                               image=self.small_map)
-                self.delay = (t.time() - nowtime) * 1000
-                if self.delay < 30:
-                    self.delay = 30
-                else:
-                    print(self.delay)
                 if 'tanks' in data:
                     self._readplayer_info(data['tanks'])
                 if int(self.label_hp['text']) <= 0:
